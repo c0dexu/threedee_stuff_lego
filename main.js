@@ -31,11 +31,10 @@ controls.update();
 
 const cube = new TestCube(scene, grid, 0, 0, 0);
 cube.constructTestCube();
-cube.checkCurrentCell();
-
+cube.initEntityOnGrid();
 function animate() {
   renderer.render(scene, camera);
   controls.update();
-  cube.checkCurrentCell();
+  cube.checkNeighboringCells();
 }
 renderer.setAnimationLoop(animate);

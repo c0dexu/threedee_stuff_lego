@@ -9,6 +9,7 @@ export class Cell {
   bbox;
   scene;
   cellMesh;
+  indices = [];
 
   constructor(scene, xcenter, ycenter, zcenter, length) {
     this.scene = scene;
@@ -107,6 +108,7 @@ export class Grid {
 
     cell.length = this.cellSize;
     cell.scene = this.scene;
+    cell.indices = [i, j, k];
     return cell;
   }
 
