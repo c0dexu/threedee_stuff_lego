@@ -38,6 +38,8 @@ export class Cell {
 
     const cellMaterial = new THREE.MeshBasicMaterial({
       color: "#18AD95",
+      transparent: true,
+      opacity: 0.45,
     });
 
     this.cellMesh = new THREE.Mesh(cellGeometry, cellMaterial);
@@ -127,25 +129,6 @@ export class Grid {
   }
 
   initRenderGrid() {
-    const geometry = new THREE.BoxGeometry(
-      this.width + this.cellSize,
-      this.width + this.cellSize,
-      this.width + this.cellSize
-    );
-    const material = new THREE.MeshBasicMaterial({
-      color: "#179bad",
-      opacity: 0.3,
-      side: THREE.DoubleSide,
-      transparent: true,
-    });
-    this.gridMesh = new THREE.Mesh(geometry, material);
-    this.gridMesh.position.set(
-      this.gridX + this.cellSize,
-      this.gridY + this.cellSize,
-      this.gridZ + this.cellSize
-    );
-    this.scene.add(this.gridMesh);
-
     this.cells.forEach((array1) => {
       array1.forEach((array2) => {
         array2.forEach((cell) => {
@@ -157,6 +140,8 @@ export class Grid {
 
           const cellMaterial = new THREE.MeshBasicMaterial({
             color: "#18AD95",
+            transparent: true,
+            opacity: 0.25,
           });
 
           const cellMesh = new THREE.Mesh(cellGeometry, cellMaterial);
