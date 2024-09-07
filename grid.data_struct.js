@@ -84,6 +84,30 @@ export class Grid {
     this.width = width + cellSize;
   }
 
+  getCellIndexByPosition(x, y, z) {
+    const gridVectorPosition = new THREE.Vector3(
+      this.gridX,
+      this.gridY,
+      this.gridZ
+    );
+
+    const x0 = gridVectorPosition.x;
+    const y0 = gridVectorPosition.y;
+    const z0 = gridVectorPosition.z;
+
+    const i = Math.floor(
+      (2 * (x0 - x) + this.width - this.cellSize) / (2 * this.cellSize)
+    );
+    const j = Math.floor(
+      (2 * (y0 - y) + this.width - this.cellSize) / (2 * this.cellSize)
+    );
+    const k = Math.floor(
+      (2 * (z0 - z) + this.width - this.cellSize) / (2 * this.cellSize)
+    );
+
+    return [i + 1, j + 1, k + 1];
+  }
+
   addCell(i, j, k) {
     const gridVectorPosition = new THREE.Vector3(
       this.gridX,
@@ -108,7 +132,6 @@ export class Grid {
 
     cell.length = this.cellSize;
     cell.scene = this.scene;
-    cell.indices = [i, j, k];
     return cell;
   }
 
