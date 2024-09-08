@@ -45,6 +45,7 @@ export class Cell {
 
     this.cellMesh = new THREE.Mesh(cellGeometry, cellMaterial);
     this.cellMesh.position.set(this.xcenter, this.ycenter, this.zcenter);
+    this.bbox = new THREE.Box3().setFromObject(this.cellMesh);
     this.scene.add(this.cellMesh);
   }
 
@@ -97,13 +98,13 @@ export class Grid {
     const y0 = gridVectorPosition.y;
     const z0 = gridVectorPosition.z;
 
-    const i = Math.ceil(
+    const i = Math.floor(
       ((this.width - this.cellSize) / 2 + x - x0) / this.cellSize
     );
-    const j = Math.ceil(
+    const j = Math.floor(
       ((this.width - this.cellSize) / 2 + y - y0) / this.cellSize
     );
-    const k = Math.ceil(
+    const k = Math.floor(
       ((this.width - this.cellSize) / 2 + z - z0) / this.cellSize
     );
 
