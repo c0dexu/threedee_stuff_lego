@@ -18,7 +18,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 
 const scene = new THREE.Scene();
 
-const grid = new Grid(scene, 128, 32);
+const grid = new Grid(scene, 1024, 512);
 grid.buildGrid();
 
 controls.target = new THREE.Vector3(
@@ -29,7 +29,7 @@ controls.target = new THREE.Vector3(
 camera.position.set(0, 20, 256);
 controls.update();
 
-const cube = new TestCube(scene, grid, 64, 32, 32);
+const cube = new TestCube(scene, grid, 0, 0, 0);
 cube.constructTestCube();
 cube.initEntityOnGrid();
 
