@@ -91,12 +91,57 @@ export class TestCube extends Entity {
       );
     }
 
-    const temp = cells[ci][cj][ck];
+    // if (ck + 1 < n) {
+    //   const cell = cells[ci][cj][ck + 1];
+    //   if (this.bbox.intersectsBox(cell.bbox)) {
+    //     this.currentCell = cell;
+    //   }
+    // }
 
-    cells[ci - 2][cj][ck].cellMesh.material.color = new THREE.Color(1, 0, 0);
+    // if (ci - 1 >= 0 && ci - 1 < n) {
+    //   const cell = cells[ci - 1][cj][ck];
+    //   if (this.bbox.intersectsBox(cell.bbox)) {
+    //     this.currentCell = cell;
+    //   }
+    // }
 
-    console.log(temp);
-    console.log(this.group.position);
+    // if (ci + 1 < n) {
+    //   const cell = cells[ci + 1][cj][ck];
+    //   if (this.bbox.intersectsBox(cell.bbox)) {
+    //     this.currentCell = cell;
+    //   }
+    // }
+
+    // if (cj + 1 < n) {
+    //   const cell = cells[ci][cj + 1][ck];
+    //   if (this.bbox.intersectsBox(cell.bbox)) {
+    //     this.currentCell = cell;
+    //   }
+    // }
+
+    // if (cj - 1 >= 0 && cj - 1 < n) {
+    //   const cell = cells[ci][cj - 1][ck];
+    //   if (this.bbox.intersectsBox(cell.bbox)) {
+    //     this.currentCell = cell;
+    //   }
+    // }
+
+    // this.currentCell.cellMesh.material.color = new THREE.Color(1, 0, 0);
+    this.group.position.set(
+      this.group.position.x - 0.1,
+      this.group.position.y,
+      this.group.position.z
+    );
+    this.bbox = new THREE.Box3().setFromObject(this.group);
+
+    try {
+      const cell = cells[n - ci + 2][n - cj + 1][n - ck + 1];
+      if (this.bbox.intersectsBox(cell.bbox)) {
+        this.currentCell = cell;
+        this.currentCell.cellMesh.material.color = new THREE.Color(1, 0, 0);
+      }
+      cell.cellMesh.material.color = new THREE.Color(0, 1, 0);
+    } catch {}
   }
 
   constructTestCube() {

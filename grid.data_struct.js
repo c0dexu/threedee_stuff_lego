@@ -91,21 +91,23 @@ export class Grid {
       this.gridZ
     );
 
+    const n = this.noCells;
+
     const x0 = gridVectorPosition.x;
     const y0 = gridVectorPosition.y;
     const z0 = gridVectorPosition.z;
 
-    const i = Math.floor(
-      (2 * (x0 - x) + this.width - this.cellSize) / (2 * this.cellSize)
+    const i = Math.ceil(
+      ((this.width - this.cellSize) / 2 + x - x0) / this.cellSize
     );
-    const j = Math.floor(
-      (2 * (y0 - y) + this.width - this.cellSize) / (2 * this.cellSize)
+    const j = Math.ceil(
+      ((this.width - this.cellSize) / 2 + y - y0) / this.cellSize
     );
-    const k = Math.floor(
-      (2 * (z0 - z) + this.width - this.cellSize) / (2 * this.cellSize)
+    const k = Math.ceil(
+      ((this.width - this.cellSize) / 2 + z - z0) / this.cellSize
     );
 
-    return [i + 1, j + 1, k + 1];
+    return [i, j, k];
   }
 
   addCell(i, j, k) {
