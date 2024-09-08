@@ -98,45 +98,32 @@ class Entity {
           n - ck + 1 - Math.sign(this.deltaP.z)
         ];
 
-      cellA.cellMesh.material.color = new THREE.Color(1, 0, 1);
-      cellB.cellMesh.material.color = new THREE.Color(1, 0, 1);
-      cellC.cellMesh.material.color = new THREE.Color(1, 0, 1);
-      cellD.cellMesh.material.color = new THREE.Color(1, 0, 1);
       if (this.bbox.intersectsBox(cellA.bbox)) {
-        this.previousCell.cellMesh.material.color = new THREE.Color(
-          24 / 255,
-          173 / 255,
-          149 / 255
-        );
+        this.previousCell.remove(this);
         this.currentCell = cellA;
+        this.currentCell.insert(this);
         this.currentCell.cellMesh.material.color = new THREE.Color(0, 1, 0);
       }
       if (this.bbox.intersectsBox(cellB.bbox)) {
-        this.previousCell.cellMesh.material.color = new THREE.Color(
-          24 / 255,
-          173 / 255,
-          149 / 255
-        );
+        this.previousCell.remove(this);
+
         this.currentCell = cellB;
+        this.currentCell.insert(this);
         this.currentCell.cellMesh.material.color = new THREE.Color(0, 1, 0);
       }
       if (this.bbox.intersectsBox(cellC.bbox)) {
-        this.previousCell.cellMesh.material.color = new THREE.Color(
-          24 / 255,
-          173 / 255,
-          149 / 255
-        );
+        this.previousCell.remove(this);
+
         this.currentCell = cellC;
+        this.currentCell.insert(this);
         this.currentCell.cellMesh.material.color = new THREE.Color(0, 1, 0);
       }
 
       if (this.bbox.intersectsBox(cellD.bbox)) {
-        this.previousCell.cellMesh.material.color = new THREE.Color(
-          24 / 255,
-          173 / 255,
-          149 / 255
-        );
+        this.previousCell.remove(this);
+
         this.currentCell = cellD;
+        this.currentCell.insert(this);
         this.currentCell.cellMesh.material.color = new THREE.Color(0, 1, 0);
       }
     } catch (e) {}

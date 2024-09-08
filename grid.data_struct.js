@@ -53,7 +53,8 @@ export class Cell {
     this.entities.push(entity);
   }
   remove(entity) {
-    this.entities.pop(entity);
+    const idx = this.entities.findIndex((e) => e === entity);
+    this.entities = this.entities.splice(idx, idx);
   }
   search(entity) {
     return this.entities.find((m) => m === entity);
