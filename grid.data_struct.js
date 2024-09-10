@@ -99,17 +99,11 @@ export class Grid {
     const y0 = gridVectorPosition.y;
     const z0 = gridVectorPosition.z;
 
-    const i = Math.floor(
-      ((this.width - this.cellSize) / 2 + x - x0) / this.cellSize
-    );
-    const j = Math.floor(
-      ((this.width - this.cellSize) / 2 + y - y0) / this.cellSize
-    );
-    const k = Math.floor(
-      ((this.width - this.cellSize) / 2 + z - z0) / this.cellSize
-    );
+    const i = (x - x0) / this.cellSize;
+    const j = (y - y0) / this.cellSize;
+    const k = (z - z0) / this.cellSize;
 
-    return [i, j, k];
+    return [i, j, k].map((x) => Math.floor(x));
   }
 
   addCell(i, j, k) {
@@ -120,9 +114,9 @@ export class Grid {
     );
 
     const cellRelativePosition = new THREE.Vector3(
-      -this.cellSize * i + (this.width - this.cellSize) / 2,
-      -this.cellSize * j + (this.width - this.cellSize) / 2,
-      -this.cellSize * k + (this.width - this.cellSize) / 2
+      this.cellSize * i,
+      this.cellSize * j,
+      this.cellSize * k
     );
 
     let cellPosition = gridVectorPosition.add(cellRelativePosition);
@@ -147,7 +141,7 @@ export class Grid {
       for (let j = 0; j <= n; j++) {
         const line2 = [];
         for (let k = 0; k <= n; k++) {
-          const cell = this.addCell(i - 1, j - 1, k - 1);
+          const cell = this.addCell(i, j, k);
           line2.push(cell);
         }
         line1.push(line2);

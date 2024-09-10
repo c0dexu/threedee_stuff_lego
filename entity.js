@@ -12,6 +12,9 @@ class Entity {
   fx;
   fy;
   fz;
+  dx = 0;
+  dy = 0;
+  dz = 0;
   theta;
   group;
   bbox;
@@ -34,99 +37,58 @@ class Entity {
 
   initEntityOnGrid() {
     const cellList = this.world.cells.flat(Infinity);
+    const myBbox = new THREE.Box3().setFromObject(this.group);
     cellList.forEach((cell) => {
       const cellBbox = cell.bbox;
-      const myBbox = new THREE.Box3().setFromObject(this.group);
       if (myBbox.intersectsBox(cellBbox)) {
         this.currentCell = cell;
         this.previousCell = cell;
-        this.currentCell.cellMesh.material.color = new THREE.Color(0, 1, 0);
         cell.insert(this);
       }
     });
   }
 
   checkNeighboringCells() {
-    const cellCandidates = [];
-    this.previousCell = this.currentCell;
-    const [ci, cj, ck] = this.world.getCellIndexByPosition(
-      this.currentCell.xcenter,
-      this.currentCell.ycenter,
-      this.currentCell.zcenter
-    );
-
-    const n = this.world.noCells;
-    const cells = this.world.cells;
-
-    this.previousPosition = new THREE.Vector3(
-      this.group.position.x,
-      this.group.position.y,
-      this.group.position.z
-    );
-
-    this.group.position.set(
-      this.group.position.x + 0.4,
-      this.group.position.y + 0.4,
-      this.group.position.z + 0.2
-    );
-    this.deltaP = new THREE.Vector3(
-      this.group.position.x,
-      this.group.position.y,
-      this.group.position.z
-    ).sub(this.previousPosition);
-
-    this.bbox = new THREE.Box3().setFromObject(this.group);
-
     try {
-      const cellA =
-        cells[n - ci + 1 - Math.sign(this.deltaP.x)][
-          n - cj + 1 - Math.sign(this.deltaP.y)
-        ][n - ck + 1 - Math.sign(this.deltaP.z)];
+      const n = this.world.noCells;
+      const cells = this.world.cells;
 
-      const cellB =
-        cells[n - ci + 1][n - cj + 1 - Math.sign(this.deltaP.y)][
-          n - ck + 1 - Math.sign(this.deltaP.z)
-        ];
+      const [ci, cj, ck] = this.world.getCellIndexByPosition(
+        this.currentCell.xcenter,
+        this.currentCell.ycenter,
+        this.currentCell.zcenter
+      );
+      const mCell = cells[ci][cj][ck];
+      const cellList = cells.flat(Infinity);
+      const neighboringCells = cellList.filter((cell) => {
+        const p1 = new THREE.Vector3(
+          mCell.xcenter,
+          mCell.ycenter,
+          mCell.zcenter
+        );
+        const p2 = new THREE.Vector3(cell.xcenter, cell.ycenter, cell.zcenter);
+        const dist = p1.sub(p2).length();
+        return dist < this.world.cellSize * 2 && dist > 0;
+      });
 
-      const cellC =
-        cells[n - ci + 1 - Math.sign(this.deltaP.x)][
-          n - cj + 1 - Math.sign(this.deltaP.y)
-        ][n - ck + 1];
+      neighboringCells.forEach((cell) => {
+        const bbox = cell.bbox;
+        if (this.bbox.intersectsBox(bbox)) {
+          this.currentCell = cell;
+          this.currentCell.cellMesh.material.color = new THREE.Color(0, 1, 0);
+        }
+      });
 
-      const cellD =
-        cells[n - ci + 1 - Math.sign(this.deltaP.x)][n - cj + 1][
-          n - ck + 1 - Math.sign(this.deltaP.z)
-        ];
+      this.group.position.set(
+        this.group.position.x - 0.1,
+        this.group.position.y + 0.4,
+        this.group.position.z
+      );
 
-      if (this.bbox.intersectsBox(cellA.bbox)) {
-        this.previousCell.remove(this);
-        this.currentCell = cellA;
-        this.currentCell.insert(this);
-        this.currentCell.cellMesh.material.color = new THREE.Color(0, 1, 0);
-      }
-      if (this.bbox.intersectsBox(cellB.bbox)) {
-        this.previousCell.remove(this);
-
-        this.currentCell = cellB;
-        this.currentCell.insert(this);
-        this.currentCell.cellMesh.material.color = new THREE.Color(0, 1, 0);
-      }
-      if (this.bbox.intersectsBox(cellC.bbox)) {
-        this.previousCell.remove(this);
-
-        this.currentCell = cellC;
-        this.currentCell.insert(this);
-        this.currentCell.cellMesh.material.color = new THREE.Color(0, 1, 0);
-      }
-
-      if (this.bbox.intersectsBox(cellD.bbox)) {
-        this.previousCell.remove(this);
-
-        this.currentCell = cellD;
-        this.currentCell.insert(this);
-        this.currentCell.cellMesh.material.color = new THREE.Color(0, 1, 0);
-      }
-    } catch (e) {}
+      this.bbox = new THREE.Box3().setFromObject(this.group);
+    } catch (e) {
+      console.log(e);
+    }
   }
 
   getDistanceFromEntity(other) {

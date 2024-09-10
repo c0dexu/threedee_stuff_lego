@@ -18,20 +18,16 @@ const controls = new OrbitControls(camera, renderer.domElement);
 
 const scene = new THREE.Scene();
 
-const grid = new Grid(scene, 256, 128);
+const grid = new Grid(scene, 256, 256);
 grid.buildGrid();
 
-controls.target = new THREE.Vector3(
-  grid.gridX + grid.cellSize,
-  grid.gridY + grid.cellSize,
-  grid.gridZ + grid.cellSize
-);
 camera.position.set(0, 20, 456);
-controls.update();
 
-const cube = new TestCube(scene, grid, 0, 0, 0);
+const cube = new TestCube(scene, grid, 128, 0, 128);
 cube.constructTestCube();
 cube.initEntityOnGrid();
+controls.target = cube.group.position;
+controls.update();
 
 function animate() {
   renderer.render(scene, camera);
