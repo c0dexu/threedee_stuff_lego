@@ -40,20 +40,19 @@ export class Cell {
     const cellMaterial = new THREE.MeshBasicMaterial({
       color: "#18AD95",
       transparent: true,
-      opacity: 0.45,
+      opacity: 0.25,
     });
 
     this.cellMesh = new THREE.Mesh(cellGeometry, cellMaterial);
     this.cellMesh.position.set(this.xcenter, this.ycenter, this.zcenter);
-    this.bbox = new THREE.Box3().setFromObject(this.cellMesh);
     this.scene.add(this.cellMesh);
   }
 
   insert(entity) {
     this.entities.push(entity);
   }
-  remove(entity) {
-    const idx = this.entities.findIndex((e) => e === entity);
+  remove(entityId) {
+    const idx = this.entities.findIndex((e) => e.id === entityId);
     this.entities = this.entities.splice(idx, idx);
   }
   search(entity) {
@@ -166,10 +165,6 @@ export class Grid {
             transparent: true,
             opacity: 0.25,
           });
-
-          const cellMesh = new THREE.Mesh(cellGeometry, cellMaterial);
-          cellMesh.position.set(cell.xcenter, cell.ycenter, cell.zcenter);
-          this.scene.add(cellMesh);
         });
       });
     });

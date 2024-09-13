@@ -1,10 +1,13 @@
 import * as THREE from "three";
+import { generateUUID } from "three/src/math/MathUtils.js";
 
 class Entity {
+  id = generateUUID();
+  name = "entity";
   scene;
   world;
-  currentCell; // current cell in which the entity lives
-  previousCell;
+  currentCells = [];
+  previousCells = [];
   mesh;
   vx;
   vy;
@@ -21,6 +24,7 @@ class Entity {
   gforce = 0.01;
   deltaP = new THREE.Vector3();
   previousPosition = new THREE.Vector3();
+  debuggingEnabled = false;
 
   constructor(scene, world, x0, y0, z0, vx = 0, vy = 0, vz = 0) {
     this.vx = vx;
@@ -41,54 +45,66 @@ class Entity {
     cellList.forEach((cell) => {
       const cellBbox = cell.bbox;
       if (myBbox.intersectsBox(cellBbox)) {
-        this.currentCell = cell;
-        this.previousCell = cell;
         cell.insert(this);
+        this.currentCells.push(cell);
+        this.previousCells.push(cell);
       }
     });
   }
 
   checkNeighboringCells() {
     try {
-      const n = this.world.noCells;
+      this.previousCells = [...this.currentCells];
+      this.currentCells = [];
+
+      this.previousCells.forEach((cell) => {
+        if (this.debuggingEnabled) {
+          cell.cellMesh.material.color = new THREE.Color(0, 0, 1);
+        }
+        cell.remove(this.id);
+      });
       const cells = this.world.cells;
 
-      const [ci, cj, ck] = this.world.getCellIndexByPosition(
-        this.currentCell.xcenter,
-        this.currentCell.ycenter,
-        this.currentCell.zcenter
-      );
-      const mCell = cells[ci][cj][ck];
       const cellList = cells.flat(Infinity);
       const neighboringCells = cellList.filter((cell) => {
         const p1 = new THREE.Vector3(
-          mCell.xcenter,
-          mCell.ycenter,
-          mCell.zcenter
+          this.group.position.x,
+          this.group.position.y,
+          this.group.position.z
         );
         const p2 = new THREE.Vector3(cell.xcenter, cell.ycenter, cell.zcenter);
         const dist = p1.sub(p2).length();
-        return dist < this.world.cellSize * 2 && dist > 0;
+        return dist < this.world.cellSize * 2;
       });
 
       neighboringCells.forEach((cell) => {
         const bbox = cell.bbox;
+        const [i, j, k] = this.world.getCellIndexByPosition(
+          cell.xcenter,
+          cell.ycenter,
+          cell.zcenter
+        );
+
         if (this.bbox.intersectsBox(bbox)) {
-          this.currentCell = cell;
-          this.currentCell.cellMesh.material.color = new THREE.Color(0, 1, 0);
+          this.currentCells.push(cells[i][j][k]);
         }
       });
 
-      this.group.position.set(
-        this.group.position.x - 0.1,
-        this.group.position.y + 0.4,
-        this.group.position.z
-      );
+      // TODO: do update stuff here
+
+      if (this.debuggingEnabled) {
+        console.log(this.currentCells.length);
+      }
+
+      this.currentCells.forEach((cell) => {
+        if (this.debuggingEnabled) {
+          cell.cellMesh.material.color = new THREE.Color(0, 1, 0);
+        }
+        cell.insert(this.id);
+      });
 
       this.bbox = new THREE.Box3().setFromObject(this.group);
-    } catch (e) {
-      console.log(e);
-    }
+    } catch (e) {}
   }
 
   getDistanceFromEntity(other) {
@@ -111,17 +127,35 @@ class Entity {
   }
 }
 
-export class TestCube extends Entity {
+export class Baseplate extends Entity {
   previousPosition = new THREE.Vector3();
   deltaPosition = new THREE.Vector3(0, 0, 0);
+  width = 512;
+  height = 512;
+  depth = 8;
   constructor(scene, world, x0 = 0, y0 = 0, z0 = 0) {
     super(scene, world, x0, y0, z0);
     this.previousPosition = new THREE.Vector3(x0, y0, z0);
   }
 
-  constructTestCube() {
-    const geometry = new THREE.BoxGeometry(4, 4, 4);
-    const material = new THREE.MeshBasicMaterial({ color: "#ffffff" });
+  constructBaseplate() {
+    this.name = "Baseplate";
+    this.texture = new THREE.TextureLoader().load(
+      "./textures/legoman/stud_top.jpg",
+      () => {},
+      () => {},
+      (err) => {
+        console.log(err);
+      }
+    );
+    this.texture.wrapS = THREE.RepeatWrapping;
+    this.texture.wrapT = THREE.RepeatWrapping;
+    this.texture.repeat = new THREE.Vector2(this.width / 16, this.height / 16);
+    const geometry = new THREE.BoxGeometry(this.width, this.depth, this.height);
+    const material = new THREE.MeshBasicMaterial({
+      color: "#165C1A",
+      map: this.texture,
+    });
     const mesh = new THREE.Mesh(geometry, material);
     this.group.add(mesh);
     this.scene.add(this.group);
