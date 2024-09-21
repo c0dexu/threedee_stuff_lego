@@ -31,21 +31,21 @@ export class Cell {
     );
     this.bbox = new THREE.Box3(minVector, maxVector);
 
-    const cellGeometry = new THREE.BoxGeometry(
-      this.length - 4,
-      this.length - 4,
-      this.length - 4
-    );
+    // const cellGeometry = new THREE.BoxGeometry(
+    //   this.length - 4,
+    //   this.length - 4,
+    //   this.length - 4
+    // );
 
-    const cellMaterial = new THREE.MeshBasicMaterial({
-      color: "#18AD95",
-      transparent: true,
-      opacity: 0.25,
-    });
+    // const cellMaterial = new THREE.MeshBasicMaterial({
+    //   color: "#18AD95",
+    //   transparent: true,
+    //   opacity: 0.25,
+    // });
 
-    this.cellMesh = new THREE.Mesh(cellGeometry, cellMaterial);
-    this.cellMesh.position.set(this.xcenter, this.ycenter, this.zcenter);
-    this.scene.add(this.cellMesh);
+    // this.cellMesh = new THREE.Mesh(cellGeometry, cellMaterial);
+    // this.cellMesh.position.set(this.xcenter, this.ycenter, this.zcenter);
+    // this.scene.add(this.cellMesh);
   }
 
   insert(entity) {

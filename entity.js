@@ -44,9 +44,9 @@ class Entity {
   update(entities, dt = 0.1) {
     if (!this.anchored) {
       this.group.position.set(
-        this.group.position.x,
+        this.group.position.x + this.vx * dt,
         this.group.position.y + this.vy * dt,
-        this.group.position.z
+        this.group.position.z + this.vz * dt
       );
     }
 
