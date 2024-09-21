@@ -3,6 +3,7 @@ import { generateUUID } from "three/src/math/MathUtils.js";
 
 class Entity {
   id = generateUUID();
+  anchored = false;
   name = "entity";
   scene;
   world;
@@ -25,6 +26,7 @@ class Entity {
   deltaP = new THREE.Vector3();
   previousPosition = new THREE.Vector3();
   debuggingEnabled = false;
+  collisionGroup = [];
 
   constructor(scene, world, x0, y0, z0, vx = 0, vy = 0, vz = 0) {
     this.vx = vx;
@@ -35,6 +37,27 @@ class Entity {
     this.bbox = new THREE.Box3().setFromObject(this.group);
     this.scene = scene;
     this.world = world;
+  }
+
+  update(entities, dt = 0.1) {
+    this.collisionGroup = [];
+    if (!this.anchored) {
+      this.vy += -this.gforce;
+    }
+    this.group.position.set(
+      this.group.position.x,
+      this.group.position.y + this.vy * dt,
+      this.group.position.z
+    );
+    const collisionBox = this.bbox.clone();
+
+    entities.forEach((entity) => {
+      if (this.id !== entity.id) {
+        if (collisionBox.intersectsBox(entity.bbox)) {
+          console.log(`${this.name} intersects ${entity.name}`);
+        }
+      }
+    });
   }
 
   addEntityToScene() {}
@@ -90,21 +113,17 @@ class Entity {
         }
       });
 
-      // TODO: do update stuff here
-
-      if (this.debuggingEnabled) {
-        console.log(this.currentCells.length);
-      }
-
       this.currentCells.forEach((cell) => {
         if (this.debuggingEnabled) {
           cell.cellMesh.material.color = new THREE.Color(0, 1, 0);
         }
-        cell.insert(this.id);
+        cell.insert(this);
       });
 
       this.bbox = new THREE.Box3().setFromObject(this.group);
-    } catch (e) {}
+    } catch (e) {
+      console.log(e);
+    }
   }
 
   getDistanceFromEntity(other) {
@@ -124,6 +143,97 @@ class Entity {
     const mPosition = this.group.position;
     const subVector = mPosition.sub(point);
     return subVector;
+  }
+}
+
+export class Legoman extends Entity {
+  name = "Legoman";
+  scale = 2;
+  constructor(scene, world, x0 = 0, y0 = 0, z0 = 0) {
+    super(scene, world, x0, y0, z0);
+  }
+
+  constructLegoman() {
+    const torsoGeometry = new THREE.BoxGeometry(
+      this.scale,
+      2 * this.scale,
+      2 * this.scale
+    );
+    const torsoMaterial = new THREE.MeshBasicMaterial({ color: "#288ACC" });
+    const torsoMesh = new THREE.Mesh(torsoGeometry, torsoMaterial);
+
+    const leftArmGeometry = new THREE.BoxGeometry(
+      this.scale,
+      2 * this.scale,
+      1 * this.scale
+    );
+    const leftArmMaterial = new THREE.MeshBasicMaterial({ color: "#E7E87A" });
+    const leftArmMesh = new THREE.Mesh(leftArmGeometry, leftArmMaterial);
+    leftArmMesh.position.set(0, 0, this.scale + 0.5 * this.scale);
+
+    const rightArmGeometry = new THREE.BoxGeometry(
+      this.scale,
+      2 * this.scale,
+      1 * this.scale
+    );
+    const rightArmMaterial = new THREE.MeshBasicMaterial({ color: "#E7E87A" });
+    const rightArmMesh = new THREE.Mesh(rightArmGeometry, rightArmMaterial);
+    rightArmMesh.position.set(0, 0, -this.scale - 0.5 * this.scale);
+
+    const rightLegGeometry = new THREE.BoxGeometry(
+      this.scale,
+      2 * this.scale,
+      1 * this.scale
+    );
+    const rightLegMaterial = new THREE.MeshBasicMaterial({ color: "#7092BE" });
+    const rightLegMesh = new THREE.Mesh(rightLegGeometry, rightLegMaterial);
+    rightLegMesh.position.set(0, -2 * this.scale, 0.5 * this.scale);
+
+    const leftLegGeometry = new THREE.BoxGeometry(
+      this.scale,
+      2 * this.scale,
+      1 * this.scale
+    );
+    const leftLegMaterial = new THREE.MeshBasicMaterial({ color: "#7092BE" });
+    const leftLegMesh = new THREE.Mesh(leftLegGeometry, leftLegMaterial);
+    leftLegMesh.position.set(0, -2 * this.scale, -0.5 * this.scale);
+
+    const headGeometry = new THREE.CylinderGeometry(
+      0.65 * this.scale,
+      0.65 * this.scale,
+      0.65 * this.scale
+    );
+    const headMaterial = new THREE.MeshBasicMaterial({ color: "#E7E87A" });
+    const headMesh = new THREE.Mesh(headGeometry, headMaterial);
+    headMesh.position.set(0, this.scale + 0.75 * this.scale, 0);
+
+    const textureFace = new THREE.TextureLoader().load(
+      "./textures/legoman/face.png",
+      () => {},
+      () => {},
+      (err) => {
+        console.log(err);
+      }
+    );
+
+    const faceGeometry = new THREE.PlaneGeometry(this.scale, this.scale);
+    const faceMaterial = new THREE.MeshBasicMaterial({
+      map: textureFace,
+      alphaHash: true,
+    });
+    const faceMesh = new THREE.Mesh(faceGeometry, faceMaterial);
+    faceMesh.rotateY(Math.PI / 2);
+    faceMesh.position.set(this.scale * 0.65, this.scale + 0.75 * this.scale, 0);
+
+    this.group.add(torsoMesh);
+    this.group.add(leftArmMesh);
+    this.group.add(rightArmMesh);
+    this.group.add(rightLegMesh);
+    this.group.add(leftLegMesh);
+    this.group.add(headMesh);
+    this.group.add(faceMesh);
+    this.bbox = new THREE.Box3().setFromObject(this.group);
+    this.scene.add(this.group);
   }
 }
 

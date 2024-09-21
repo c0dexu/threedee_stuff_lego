@@ -59,8 +59,10 @@ export class Cell {
     return this.entities.find((m) => m === entity);
   }
   update(dt = 0.1) {
+    debugger;
+    console.log("entities from cell", this.entities);
     this.entities.forEach((entity) => {
-      entity.update(dt);
+      entity.update(this.entities);
     });
   }
 }
@@ -167,6 +169,12 @@ export class Grid {
           });
         });
       });
+    });
+  }
+
+  updateCells() {
+    this.cells.flat(Infinity).forEach((cell) => {
+      cell.update(0.01);
     });
   }
 }
