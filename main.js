@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { Grid } from "./grid.data_struct";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { Baseplate, Legoman } from "./entity";
+import { Baseplate, Legoman, SkyBox } from "./entity";
 
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -36,6 +36,9 @@ legoman.debuggingEnabled = true;
 
 const light = new THREE.HemisphereLight(0xcef0ff, 0xcfc6ff, 2);
 scene.add(light);
+
+const skybox = new SkyBox(scene);
+skybox.initSkyBox();
 
 function animate() {
   renderer.render(scene, camera);

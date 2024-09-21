@@ -255,6 +255,39 @@ export class Legoman extends Entity {
   }
 }
 
+export class SkyBox {
+  mesh;
+  texturePath = "./textures/skybox.jpg"; // default
+  scene;
+  target;
+  constructor(scene) {
+    this.scene = scene;
+  }
+
+  initSkyBox() {
+    this.texture = new THREE.TextureLoader().load(
+      this.texturePath,
+      () => {},
+      () => {},
+      (err) => {
+        console.log(err);
+      }
+    );
+    const geo = new THREE.BoxGeometry(1024, 1024, 1024);
+    const material = new THREE.MeshBasicMaterial({
+      map: this.texture,
+    });
+    material.side = THREE.BackSide;
+    this.mesh = new THREE.Mesh(geo, material);
+    console.log(this.mesh);
+    this.scene.add(this.mesh);
+  }
+
+  update() {
+    this.mesh.position.set(this.target.x, this.target.y, this.target.z);
+  }
+}
+
 export class Baseplate extends Entity {
   previousPosition = new THREE.Vector3();
   deltaPosition = new THREE.Vector3(0, 0, 0);
