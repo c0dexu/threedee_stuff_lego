@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { generateUUID } from "three/src/math/MathUtils.js";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 class Entity {
   id = generateUUID();
@@ -26,7 +27,8 @@ class Entity {
   deltaP = new THREE.Vector3();
   previousPosition = new THREE.Vector3();
   debuggingEnabled = false;
-  collisionGroup = [];
+  collisionCount = 0;
+  collisionGroupVertical = [];
 
   constructor(scene, world, x0, y0, z0, vx = 0, vy = 0, vz = 0) {
     this.vx = vx;
@@ -40,24 +42,39 @@ class Entity {
   }
 
   update(entities, dt = 0.1) {
-    this.collisionGroup = [];
     if (!this.anchored) {
-      this.vy += -this.gforce;
+      this.group.position.set(
+        this.group.position.x,
+        this.group.position.y + this.vy * dt,
+        this.group.position.z
+      );
     }
-    this.group.position.set(
-      this.group.position.x,
-      this.group.position.y + this.vy * dt,
-      this.group.position.z
-    );
-    const collisionBox = this.bbox.clone();
 
+    const collisionBoxVertical = this.bbox.clone();
     entities.forEach((entity) => {
       if (this.id !== entity.id) {
-        if (collisionBox.intersectsBox(entity.bbox)) {
-          console.log(`${this.name} intersects ${entity.name}`);
+        if (collisionBoxVertical.intersectsBox(entity.bbox)) {
+          if (!this.anchored) {
+            this.collisionGroupVertical.push(entity);
+          }
         }
       }
     });
+    if (this.collisionGroupVertical.length > 0) {
+      this.collisionGroupVertical.forEach((entity) => {
+        const bbox = entity.bbox;
+        const mBbox = this.bbox;
+        const intersection = mBbox.intersect(bbox);
+        const minY = intersection.min.y;
+        const maxY = intersection.max.y;
+        const dy = maxY - minY;
+        this.group.position.setY(this.group.position.y + dy);
+      });
+      this.vy = 0;
+      this.collisionGroupVertical = [];
+    } else if (!this.anchored) {
+      this.vy += -this.gforce;
+    }
   }
 
   addEntityToScene() {}
@@ -77,52 +94,41 @@ class Entity {
 
   checkNeighboringCells() {
     try {
-      this.previousCells = [...this.currentCells];
-      this.currentCells = [];
-
-      this.previousCells.forEach((cell) => {
-        if (this.debuggingEnabled) {
-          cell.cellMesh.material.color = new THREE.Color(0, 0, 1);
-        }
-        cell.remove(this.id);
-      });
-      const cells = this.world.cells;
-
-      const cellList = cells.flat(Infinity);
-      const neighboringCells = cellList.filter((cell) => {
-        const p1 = new THREE.Vector3(
-          this.group.position.x,
-          this.group.position.y,
-          this.group.position.z
-        );
-        const p2 = new THREE.Vector3(cell.xcenter, cell.ycenter, cell.zcenter);
-        const dist = p1.sub(p2).length();
-        return dist < this.world.cellSize * 2;
-      });
-
-      neighboringCells.forEach((cell) => {
-        const bbox = cell.bbox;
-        const [i, j, k] = this.world.getCellIndexByPosition(
-          cell.xcenter,
-          cell.ycenter,
-          cell.zcenter
-        );
-
-        if (this.bbox.intersectsBox(bbox)) {
-          this.currentCells.push(cells[i][j][k]);
-        }
-      });
-
-      this.currentCells.forEach((cell) => {
-        if (this.debuggingEnabled) {
-          cell.cellMesh.material.color = new THREE.Color(0, 1, 0);
-        }
-        cell.insert(this);
+      this.world.cells.forEach((line1) => {
+        line1.forEach((line2) => {
+          line2.forEach((cell) => {
+            const p1 = new THREE.Vector3(
+              this.group.position.x,
+              this.group.position.y,
+              this.group.position.z
+            );
+            const p2 = new THREE.Vector3(
+              cell.xcenter,
+              cell.ycenter,
+              cell.zcenter
+            );
+            const dist = p1.sub(p2).length();
+            if (dist < this.world.cellSize * 2) {
+              const bbox = cell.bbox;
+              const [i, j, k] = this.world.getCellIndexByPosition(
+                cell.xcenter,
+                cell.ycenter,
+                cell.zcenter
+              );
+              if (this.bbox.intersectsBox(bbox)) {
+                cell.insert(this);
+              }
+            } else {
+              cell.remove(this.id);
+            }
+          });
+        });
       });
 
       this.bbox = new THREE.Box3().setFromObject(this.group);
     } catch (e) {
       console.log(e);
+      return;
     }
   }
 
@@ -159,7 +165,7 @@ export class Legoman extends Entity {
       2 * this.scale,
       2 * this.scale
     );
-    const torsoMaterial = new THREE.MeshBasicMaterial({ color: "#288ACC" });
+    const torsoMaterial = new THREE.MeshStandardMaterial({ color: "#288ACC" });
     const torsoMesh = new THREE.Mesh(torsoGeometry, torsoMaterial);
 
     const leftArmGeometry = new THREE.BoxGeometry(
@@ -167,7 +173,9 @@ export class Legoman extends Entity {
       2 * this.scale,
       1 * this.scale
     );
-    const leftArmMaterial = new THREE.MeshBasicMaterial({ color: "#E7E87A" });
+    const leftArmMaterial = new THREE.MeshStandardMaterial({
+      color: "#E7E87A",
+    });
     const leftArmMesh = new THREE.Mesh(leftArmGeometry, leftArmMaterial);
     leftArmMesh.position.set(0, 0, this.scale + 0.5 * this.scale);
 
@@ -176,7 +184,9 @@ export class Legoman extends Entity {
       2 * this.scale,
       1 * this.scale
     );
-    const rightArmMaterial = new THREE.MeshBasicMaterial({ color: "#E7E87A" });
+    const rightArmMaterial = new THREE.MeshStandardMaterial({
+      color: "#E7E87A",
+    });
     const rightArmMesh = new THREE.Mesh(rightArmGeometry, rightArmMaterial);
     rightArmMesh.position.set(0, 0, -this.scale - 0.5 * this.scale);
 
@@ -185,7 +195,9 @@ export class Legoman extends Entity {
       2 * this.scale,
       1 * this.scale
     );
-    const rightLegMaterial = new THREE.MeshBasicMaterial({ color: "#7092BE" });
+    const rightLegMaterial = new THREE.MeshStandardMaterial({
+      color: "#7092BE",
+    });
     const rightLegMesh = new THREE.Mesh(rightLegGeometry, rightLegMaterial);
     rightLegMesh.position.set(0, -2 * this.scale, 0.5 * this.scale);
 
@@ -194,7 +206,9 @@ export class Legoman extends Entity {
       2 * this.scale,
       1 * this.scale
     );
-    const leftLegMaterial = new THREE.MeshBasicMaterial({ color: "#7092BE" });
+    const leftLegMaterial = new THREE.MeshStandardMaterial({
+      color: "#7092BE",
+    });
     const leftLegMesh = new THREE.Mesh(leftLegGeometry, leftLegMaterial);
     leftLegMesh.position.set(0, -2 * this.scale, -0.5 * this.scale);
 
@@ -203,9 +217,9 @@ export class Legoman extends Entity {
       0.65 * this.scale,
       0.65 * this.scale
     );
-    const headMaterial = new THREE.MeshBasicMaterial({ color: "#E7E87A" });
+    const headMaterial = new THREE.MeshStandardMaterial({ color: "#E7E87A" });
     const headMesh = new THREE.Mesh(headGeometry, headMaterial);
-    headMesh.position.set(0, this.scale + 0.75 * this.scale, 0);
+    headMesh.position.set(0, 0.75 * this.scale + 0.75 * this.scale, 0);
 
     const textureFace = new THREE.TextureLoader().load(
       "./textures/legoman/face.png",
@@ -217,13 +231,17 @@ export class Legoman extends Entity {
     );
 
     const faceGeometry = new THREE.PlaneGeometry(this.scale, this.scale);
-    const faceMaterial = new THREE.MeshBasicMaterial({
+    const faceMaterial = new THREE.MeshStandardMaterial({
       map: textureFace,
       alphaHash: true,
     });
     const faceMesh = new THREE.Mesh(faceGeometry, faceMaterial);
     faceMesh.rotateY(Math.PI / 2);
-    faceMesh.position.set(this.scale * 0.65, this.scale + 0.75 * this.scale, 0);
+    faceMesh.position.set(
+      this.scale * 0.65,
+      this.scale * 0.75 + 0.75 * this.scale,
+      0
+    );
 
     this.group.add(torsoMesh);
     this.group.add(leftArmMesh);
@@ -260,9 +278,9 @@ export class Baseplate extends Entity {
     );
     this.texture.wrapS = THREE.RepeatWrapping;
     this.texture.wrapT = THREE.RepeatWrapping;
-    this.texture.repeat = new THREE.Vector2(this.width / 16, this.height / 16);
+    this.texture.repeat = new THREE.Vector2(this.width / 4, this.height / 4);
     const geometry = new THREE.BoxGeometry(this.width, this.depth, this.height);
-    const material = new THREE.MeshBasicMaterial({
+    const material = new THREE.MeshStandardMaterial({
       color: "#165C1A",
       map: this.texture,
     });

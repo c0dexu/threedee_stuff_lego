@@ -49,18 +49,19 @@ export class Cell {
   }
 
   insert(entity) {
-    this.entities.push(entity);
+    const foundEntity = this.search(entity.id);
+    if (!foundEntity) {
+      this.entities.push(entity);
+    }
   }
   remove(entityId) {
     const idx = this.entities.findIndex((e) => e.id === entityId);
     this.entities = this.entities.splice(idx, idx);
   }
-  search(entity) {
-    return this.entities.find((m) => m === entity);
+  search(entityId) {
+    return this.entities.find((m) => m.id === entityId);
   }
   update(dt = 0.1) {
-    debugger;
-    console.log("entities from cell", this.entities);
     this.entities.forEach((entity) => {
       entity.update(this.entities);
     });
