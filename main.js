@@ -15,7 +15,7 @@ const camera = new THREE.PerspectiveCamera(
 
 const scene = new THREE.Scene();
 
-const grid = new Grid(scene, 256, 256);
+const grid = new Grid(scene, 512, 512);
 grid.buildGrid();
 
 camera.position.set(0, 20, 16);
@@ -82,7 +82,14 @@ function animate() {
 
   const steer = rotTarget - rot;
   rot += steer * 0.025;
-  controllerTarget.group.rotation.set(0, -directionAngle, 0);
+
+  const steerTarget = Math.PI - rot - controllerTarget.group.rotation.y;
+
+  controllerTarget.group.rotation.set(
+    0,
+    controllerTarget.group.rotation.y + steerTarget * 0.01 * canMove,
+    0
+  );
   cooldown = Math.abs(steer) > 0.1;
   if (
     Math.sqrt(

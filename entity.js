@@ -165,7 +165,7 @@ export class Legoman extends Entity {
       2 * this.scale,
       2 * this.scale
     );
-    const torsoMaterial = new THREE.MeshStandardMaterial({ color: "#288ACC" });
+    const torsoMaterial = new THREE.MeshStandardMaterial({ color: "#198238" });
     const torsoMesh = new THREE.Mesh(torsoGeometry, torsoMaterial);
 
     const leftArmGeometry = new THREE.BoxGeometry(
