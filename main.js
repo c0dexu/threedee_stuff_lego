@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { Grid } from "./grid.data_struct";
-import { Baseplate, Legoman, SkyBox } from "./entity";
+import { Baseplate, Legoman, SkyBox, Test } from "./entity";
 
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -28,6 +28,10 @@ const legoman = new Legoman(scene, grid, 64, 256, 0);
 legoman.constructLegoman();
 cube.anchored = true;
 legoman.debuggingEnabled = true;
+
+const test = new Test(scene, grid, 64, 256 - 64 + 1, 0);
+test.constructTest();
+test.anchored = true;
 
 const light = new THREE.HemisphereLight(0xcef0ff, 0xcfc6ff, 2);
 scene.add(light);
@@ -81,7 +85,22 @@ function animate() {
     canMove = 1;
   }
 
-  if (!keyState["ArrowUp"] && !keyState["ArrowDown"]) {
+  if (keyState["ArrowLeft"]) {
+    directionAngle = Math.PI * 2;
+    canMove = 1;
+  }
+
+  if (keyState["ArrowRight"]) {
+    directionAngle = Math.PI;
+    canMove = 1;
+  }
+
+  if (
+    !keyState["ArrowUp"] &&
+    !keyState["ArrowDown"] &&
+    !keyState["ArrowLeft"] &&
+    !keyState["ArrowRight"]
+  ) {
     canMove = 0;
     controllerTarget.vx *= 0.75;
     controllerTarget.vz *= 0.75;
@@ -123,6 +142,7 @@ function animate() {
   renderer.render(scene, camera);
   cube.checkNeighboringCells();
   legoman.checkNeighboringCells();
+  test.checkNeighboringCells();
   grid.updateCells();
   camera.lookAt(legoman.group.position);
   camera.position.set(

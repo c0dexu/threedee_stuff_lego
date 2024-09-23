@@ -57,17 +57,43 @@ class Entity {
       this.collisionGroup.forEach((entity) => {
         const bbox = entity.bbox;
         const mBbox = this.bbox;
+        const minMBoxY = mBbox.min.y;
+        const minBoxY = bbox.max.y;
         const intersection = mBbox.intersect(bbox);
         const minY = intersection.min.y;
         const maxY = intersection.max.y;
-        const dy = maxY - minY;
-        if (Math.abs(dy) > 0.1) {
-          this.vx = 0;
-          this.vz = 0;
+        const minX = intersection.min.x;
+        const maxX = intersection.max.x;
+        const minZ = intersection.min.z;
+        const maxZ = intersection.max.z;
+        const dy = minMBoxY - minBoxY;
+        const dx = maxX - minX;
+        const dz = maxZ - minZ;
+        console.log(`intersects with ${entity.name}`, dy);
+        if (dy > -4) {
+          this.group.position.setY(this.group.position.y + 1 * 0.025);
+          this.vy = 0;
+        } else {
+          let bbsize = new THREE.Vector3();
+          bbox.getSize(bbsize);
+          const w = bbsize.x;
+          const h = bbsize.y;
+
+          const center = new THREE.Vector3(
+            bbox.max.x - w / 2,
+            bbox.max.y,
+            bbox.max.z - h / 2
+          );
+          const dx = center.x - this.group.position.x;
+          const dz = center.z - this.group.position.z;
+          const m = Math.sqrt(dx * dx + dz * dz);
+          const nx = -dx / m;
+          const nz = -dz / m;
+
+          this.group.position.setX(this.group.position.x + nx * 0.7);
+          this.group.position.setZ(this.group.position.z + nz * 0.7);
         }
-        this.group.position.setY(this.group.position.y + dy * 0.025);
       });
-      this.vy = 0;
       this.collisionGroup = [];
     } else if (!this.anchored) {
       this.vy += -this.gforce;
@@ -128,10 +154,6 @@ class Entity {
           this.group.position.y + this.vy * dt,
           this.group.position.z + this.vz * dt
         );
-      }
-
-      if (this.debuggingEnabled) {
-        console.log(this.vx, this.vz);
       }
 
       this.bbox = new THREE.Box3().setFromObject(this.group);
@@ -260,6 +282,20 @@ export class Legoman extends Entity {
     this.group.add(headMesh);
     this.group.add(faceMesh);
     this.bbox = new THREE.Box3().setFromObject(this.group);
+    this.scene.add(this.group);
+  }
+}
+
+export class Test extends Entity {
+  constructor(scene, world, x0 = 0, y0 = 0, z0 = 0) {
+    super(scene, world, x0, y0, z0);
+    this.previousPosition = new THREE.Vector3(x0, y0, z0);
+  }
+  constructTest() {
+    const geometry = new THREE.BoxGeometry(16, 16, 16);
+    const material = new THREE.MeshBasicMaterial({ color: "#cfdeea" });
+    const mesh = new THREE.Mesh(geometry, material);
+    this.group.add(mesh);
     this.scene.add(this.group);
   }
 }
