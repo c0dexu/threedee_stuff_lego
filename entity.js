@@ -28,7 +28,7 @@ class Entity {
   previousPosition = new THREE.Vector3();
   debuggingEnabled = false;
   collisionCount = 0;
-  collisionGroupVertical = [];
+  collisionGroup = [];
 
   constructor(scene, world, x0, y0, z0, vx = 0, vy = 0, vz = 0) {
     this.vx = vx;
@@ -42,36 +42,33 @@ class Entity {
   }
 
   update(entities, dt = 0.1) {
-    if (!this.anchored) {
-      this.group.position.set(
-        this.group.position.x + this.vx * dt,
-        this.group.position.y + this.vy * dt,
-        this.group.position.z + this.vz * dt
-      );
-    }
+    const collisionBox = this.bbox.clone();
 
-    const collisionBoxVertical = this.bbox.clone();
     entities.forEach((entity) => {
       if (this.id !== entity.id) {
-        if (collisionBoxVertical.intersectsBox(entity.bbox)) {
+        if (collisionBox.intersectsBox(entity.bbox)) {
           if (!this.anchored) {
-            this.collisionGroupVertical.push(entity);
+            this.collisionGroup.push(entity);
           }
         }
       }
     });
-    if (this.collisionGroupVertical.length > 0) {
-      this.collisionGroupVertical.forEach((entity) => {
+    if (this.collisionGroup.length > 0) {
+      this.collisionGroup.forEach((entity) => {
         const bbox = entity.bbox;
         const mBbox = this.bbox;
         const intersection = mBbox.intersect(bbox);
         const minY = intersection.min.y;
         const maxY = intersection.max.y;
         const dy = maxY - minY;
-        this.group.position.setY(this.group.position.y + dy);
+        if (Math.abs(dy) > 0.1) {
+          this.vx = 0;
+          this.vz = 0;
+        }
+        this.group.position.setY(this.group.position.y + dy * 0.025);
       });
       this.vy = 0;
-      this.collisionGroupVertical = [];
+      this.collisionGroup = [];
     } else if (!this.anchored) {
       this.vy += -this.gforce;
     }
@@ -92,7 +89,7 @@ class Entity {
     });
   }
 
-  checkNeighboringCells() {
+  checkNeighboringCells(dt = 0.1) {
     try {
       this.world.cells.forEach((line1) => {
         line1.forEach((line2) => {
@@ -124,6 +121,18 @@ class Entity {
           });
         });
       });
+
+      if (!this.anchored) {
+        this.group.position.set(
+          this.group.position.x + this.vx * dt,
+          this.group.position.y + this.vy * dt,
+          this.group.position.z + this.vz * dt
+        );
+      }
+
+      if (this.debuggingEnabled) {
+        console.log(this.vx, this.vz);
+      }
 
       this.bbox = new THREE.Box3().setFromObject(this.group);
     } catch (e) {
@@ -293,7 +302,7 @@ export class Baseplate extends Entity {
   deltaPosition = new THREE.Vector3(0, 0, 0);
   width = 512;
   height = 512;
-  depth = 8;
+  depth = 512;
   constructor(scene, world, x0 = 0, y0 = 0, z0 = 0) {
     super(scene, world, x0, y0, z0);
     this.previousPosition = new THREE.Vector3(x0, y0, z0);

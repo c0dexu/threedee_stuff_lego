@@ -15,7 +15,7 @@ const camera = new THREE.PerspectiveCamera(
 
 const scene = new THREE.Scene();
 
-const grid = new Grid(scene, 512, 512);
+const grid = new Grid(scene, 256, 256);
 grid.buildGrid();
 
 camera.position.set(0, 20, 16);
@@ -24,7 +24,7 @@ const cube = new Baseplate(scene, grid, 128, -64, 128);
 cube.constructBaseplate();
 cube.initEntityOnGrid();
 
-const legoman = new Legoman(scene, grid, 64, 26, 0);
+const legoman = new Legoman(scene, grid, 64, 256, 0);
 legoman.constructLegoman();
 cube.anchored = true;
 legoman.debuggingEnabled = true;
@@ -45,15 +45,12 @@ let canMove = 0;
 
 const keyLogger = (event) => {
   keyState[event.key] = event.type === "keydown";
-  console.log(keyState);
 };
 
 document.addEventListener("keydown", (event) => {
-  console.log("keydown");
   keyLogger(event);
 });
 document.addEventListener("keyup", (event) => {
-  console.log("keyup");
   keyLogger(event);
 });
 
@@ -70,31 +67,51 @@ function animate() {
     sign = 0;
   }
 
+  if (keyState[" "]) {
+    controllerTarget.vy = 1;
+  }
+
   if (keyState["ArrowUp"]) {
+    directionAngle = Math.PI / 2;
     canMove = 1;
   }
 
-  if (!keyState["ArrowUp"]) {
+  if (keyState["ArrowDown"]) {
+    directionAngle = -Math.PI / 2;
+    canMove = 1;
+  }
+
+  if (!keyState["ArrowUp"] && !keyState["ArrowDown"]) {
     canMove = 0;
     controllerTarget.vx *= 0.75;
     controllerTarget.vz *= 0.75;
+    if (
+      Math.sqrt(
+        controllerTarget.vx * controllerTarget.vx +
+          controllerTarget.vy * controllerTarget.vy
+      ) < 0.01
+    ) {
+      controllerTarget.vx = 0;
+      controllerTarget.vz = 0;
+    }
   }
 
   const steer = rotTarget - rot;
   rot += steer * 0.025;
 
-  const steerTarget = Math.PI - rot - controllerTarget.group.rotation.y;
+  const steerTarget =
+    directionAngle - controllerTarget.group.rotation.y - rot + Math.PI / 2;
 
   controllerTarget.group.rotation.set(
     0,
-    controllerTarget.group.rotation.y + steerTarget * 0.01 * canMove,
+    controllerTarget.group.rotation.y + steerTarget * 0.03 * canMove,
     0
   );
   cooldown = Math.abs(steer) > 0.1;
   if (
     Math.sqrt(
       controllerTarget.vx * controllerTarget.vx +
-        controllerTarget.vy * controllerTarget.vy
+        controllerTarget.vz * controllerTarget.vz
     ) < 2
   ) {
     controllerTarget.vx += -Math.sin(rot + directionAngle) * canMove * 0.1;
@@ -116,5 +133,10 @@ function animate() {
   if (!cooldown) {
     rotTarget += (sign * Math.PI) / 4;
   }
+  skybox.mesh.position.set(
+    camera.position.x,
+    camera.position.y,
+    camera.position.z
+  );
 }
 renderer.setAnimationLoop(animate);
