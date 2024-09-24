@@ -29,6 +29,8 @@ class Entity {
   debuggingEnabled = false;
   collisionCount = 0;
   collisionGroup = [];
+  jumpForce = 2;
+  onPlatform = false;
 
   constructor(scene, world, x0, y0, z0, vx = 0, vy = 0, vz = 0) {
     this.vx = vx;
@@ -53,6 +55,8 @@ class Entity {
         }
       }
     });
+    this.onPlatform = false;
+
     if (this.collisionGroup.length > 0) {
       this.collisionGroup.forEach((entity) => {
         const bbox = entity.bbox;
@@ -60,8 +64,6 @@ class Entity {
         const minMBoxY = mBbox.min.y;
         const minBoxY = bbox.max.y;
         const intersection = mBbox.intersect(bbox);
-        const minY = intersection.min.y;
-        const maxY = intersection.max.y;
         const minX = intersection.min.x;
         const maxX = intersection.max.x;
         const minZ = intersection.min.z;
@@ -69,11 +71,12 @@ class Entity {
         const dy = minMBoxY - minBoxY;
         const dx = maxX - minX;
         const dz = maxZ - minZ;
-        console.log(`intersects with ${entity.name}`, dy);
         if (dy > -4) {
           this.group.position.setY(this.group.position.y + 1 * 0.025);
           this.vy = 0;
+          this.onPlatform = true;
         } else {
+          this.onPlatform = false;
           let bbsize = new THREE.Vector3();
           bbox.getSize(bbsize);
           const w = bbsize.x;
@@ -89,9 +92,8 @@ class Entity {
           const m = Math.sqrt(dx * dx + dz * dz);
           const nx = -dx / m;
           const nz = -dz / m;
-
-          this.group.position.setX(this.group.position.x + nx * 0.7);
-          this.group.position.setZ(this.group.position.z + nz * 0.7);
+          this.group.position.setX(this.group.position.x - dx * 0.07);
+          this.group.position.setZ(this.group.position.z - dz * 0.07);
         }
       });
       this.collisionGroup = [];
@@ -190,6 +192,13 @@ export class Legoman extends Entity {
     super(scene, world, x0, y0, z0);
   }
 
+  respawn() {
+    this.vx = 0;
+    this.vy = 0;
+    this.vz = 0;
+    this.group.position.set(64, 256, 0);
+  }
+
   constructLegoman() {
     const torsoGeometry = new THREE.BoxGeometry(
       this.scale,
@@ -198,6 +207,26 @@ export class Legoman extends Entity {
     );
     const torsoMaterial = new THREE.MeshStandardMaterial({ color: "#198238" });
     const torsoMesh = new THREE.Mesh(torsoGeometry, torsoMaterial);
+
+    const tshirtGeometry = new THREE.PlaneGeometry(
+      2 * this.scale,
+      2 * this.scale
+    );
+
+    this.texture = new THREE.TextureLoader().load(
+      "./textures/legoman/default_tshirt.png",
+      () => {},
+      () => {},
+      (err) => {
+        console.log(err);
+      }
+    );
+    const tshirtMaterial = new THREE.MeshStandardMaterial({
+      map: this.texture,
+    });
+    const tshirtMesh = new THREE.Mesh(tshirtGeometry, tshirtMaterial);
+    tshirtMesh.rotateY(Math.PI / 2);
+    tshirtMesh.position.set(this.scale * 0.65, 0, 0);
 
     const leftArmGeometry = new THREE.BoxGeometry(
       this.scale,
@@ -282,18 +311,38 @@ export class Legoman extends Entity {
     this.group.add(headMesh);
     this.group.add(faceMesh);
     this.bbox = new THREE.Box3().setFromObject(this.group);
+    this.group.add(tshirtMesh);
     this.scene.add(this.group);
   }
 }
 
 export class Test extends Entity {
+  width = 32;
+  height = 32;
+  depth = 32;
   constructor(scene, world, x0 = 0, y0 = 0, z0 = 0) {
-    super(scene, world, x0, y0, z0);
+    super(scene, world, x0, y0, z0, 0, 0, 0);
     this.previousPosition = new THREE.Vector3(x0, y0, z0);
   }
   constructTest() {
-    const geometry = new THREE.BoxGeometry(16, 16, 16);
-    const material = new THREE.MeshBasicMaterial({ color: "#cfdeea" });
+    this.anchored = true;
+    this.name = "TestCube";
+    this.texture = new THREE.TextureLoader().load(
+      "./textures/legoman/stud_top.jpg",
+      () => {},
+      () => {},
+      (err) => {
+        console.log(err);
+      }
+    );
+    this.texture.wrapS = THREE.RepeatWrapping;
+    this.texture.wrapT = THREE.RepeatWrapping;
+    this.texture.repeat = new THREE.Vector2(this.width / 4, this.height / 4);
+    const geometry = new THREE.BoxGeometry(this.width, this.height, this.depth);
+    const material = new THREE.MeshStandardMaterial({
+      color: "#cfdeea",
+      map: this.texture,
+    });
     const mesh = new THREE.Mesh(geometry, material);
     this.group.add(mesh);
     this.scene.add(this.group);
@@ -305,6 +354,7 @@ export class SkyBox {
   texturePath = "./textures/skybox.jpg"; // default
   scene;
   target;
+
   constructor(scene) {
     this.scene = scene;
   }
@@ -324,7 +374,6 @@ export class SkyBox {
     });
     material.side = THREE.BackSide;
     this.mesh = new THREE.Mesh(geo, material);
-    console.log(this.mesh);
     this.scene.add(this.mesh);
   }
 

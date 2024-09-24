@@ -20,7 +20,7 @@ grid.buildGrid();
 
 camera.position.set(0, 20, 16);
 
-const cube = new Baseplate(scene, grid, 128, -64, 128);
+const cube = new Baseplate(scene, grid, 128, -128, 128);
 cube.constructBaseplate();
 cube.initEntityOnGrid();
 
@@ -29,9 +29,14 @@ legoman.constructLegoman();
 cube.anchored = true;
 legoman.debuggingEnabled = true;
 
-const test = new Test(scene, grid, 64, 256 - 64 + 1, 0);
-test.constructTest();
-test.anchored = true;
+const test1 = new Test(scene, grid, 64, 256 - 64 + 32, 0);
+test1.constructTest();
+
+const test2 = new Test(scene, grid, 64 + 16, 256 - 64 + 64.25, 0);
+test2.constructTest();
+
+const test3 = new Test(scene, grid, 64 + 32, 256 - 64 + 32.15, 0);
+test3.constructTest();
 
 const light = new THREE.HemisphereLight(0xcef0ff, 0xcfc6ff, 2);
 scene.add(light);
@@ -46,6 +51,7 @@ let controllerTarget = legoman;
 let directionAngle = Math.PI / 2;
 let keyState = [];
 let canMove = 0;
+let cameraOffset = 50;
 
 const keyLogger = (event) => {
   keyState[event.key] = event.type === "keydown";
@@ -71,8 +77,8 @@ function animate() {
     sign = 0;
   }
 
-  if (keyState[" "]) {
-    controllerTarget.vy = 1;
+  if (keyState["x"] && controllerTarget.onPlatform) {
+    controllerTarget.vy = 1.5;
   }
 
   if (keyState["ArrowUp"]) {
@@ -93,6 +99,18 @@ function animate() {
   if (keyState["ArrowRight"]) {
     directionAngle = Math.PI;
     canMove = 1;
+  }
+
+  if (keyState["q"]) {
+    cameraOffset -= 1 / 2;
+  }
+
+  if (keyState["e"]) {
+    cameraOffset += 1 / 2;
+  }
+
+  if (keyState["r"]) {
+    controllerTarget.respawn();
   }
 
   if (
@@ -142,13 +160,15 @@ function animate() {
   renderer.render(scene, camera);
   cube.checkNeighboringCells();
   legoman.checkNeighboringCells();
-  test.checkNeighboringCells();
+  test1.checkNeighboringCells();
+  test2.checkNeighboringCells();
+  test3.checkNeighboringCells();
   grid.updateCells();
   camera.lookAt(legoman.group.position);
   camera.position.set(
-    legoman.group.position.x + 50 * Math.cos(rot),
-    legoman.group.position.y + 32,
-    legoman.group.position.z + 50 * Math.sin(rot)
+    legoman.group.position.x + cameraOffset * Math.cos(rot),
+    legoman.group.position.y + cameraOffset / 2,
+    legoman.group.position.z + cameraOffset * Math.sin(rot)
   );
   if (!cooldown) {
     rotTarget += (sign * Math.PI) / 4;
