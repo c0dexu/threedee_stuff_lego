@@ -41,6 +41,9 @@ test3.constructTest();
 const light = new THREE.HemisphereLight(0xcef0ff, 0xcfc6ff, 2);
 scene.add(light);
 
+const bobomb = new BobOmb(scene, camera, grid, 256, 256, 0);
+bobomb.constructBobOmb();
+
 const skybox = new SkyBox(scene);
 skybox.initSkyBox();
 let rot = 0;
@@ -52,6 +55,7 @@ let directionAngle = Math.PI / 2;
 let keyState = [];
 let canMove = 0;
 let cameraOffset = 50;
+let k = 1;
 
 const keyLogger = (event) => {
   keyState[event.key] = event.type === "keydown";
@@ -64,44 +68,45 @@ document.addEventListener("keyup", (event) => {
   keyLogger(event);
 });
 
-const bobomb = new BobOmb(scene, camera, grid, 256, 256, 0);
-bobomb.constructBobOmb();
-
 function animate() {
   if (keyState["a"]) {
-    sign = -1;
+    sign = 1;
   }
 
   if (keyState["d"]) {
-    sign = 1;
+    sign = -1;
   }
 
   if (!keyState["a"] && !keyState["d"]) {
     sign = 0;
   }
 
-  if (keyState["x"] && controllerTarget.onPlatform) {
-    controllerTarget.vy = 1.5;
+  if (keyState["x"] && controllerTarget.canJump) {
+    controllerTarget.vy += 1.5;
   }
 
   if (keyState["ArrowUp"]) {
     directionAngle = Math.PI / 2;
     canMove = 1;
+    k = -1;
   }
 
   if (keyState["ArrowDown"]) {
     directionAngle = -Math.PI / 2;
     canMove = 1;
+    k = -1;
   }
 
   if (keyState["ArrowLeft"]) {
     directionAngle = Math.PI * 2;
     canMove = 1;
+    k = 1;
   }
 
   if (keyState["ArrowRight"]) {
     directionAngle = Math.PI;
     canMove = 1;
+    k = 1;
   }
 
   if (keyState["q"]) {
@@ -140,7 +145,10 @@ function animate() {
   rot += steer * 0.025;
 
   const steerTarget =
-    directionAngle - controllerTarget.group.rotation.y - rot + Math.PI / 2;
+    directionAngle -
+    controllerTarget.group.rotation.y -
+    rot -
+    (Math.PI / 2) * k;
 
   controllerTarget.group.rotation.set(
     0,

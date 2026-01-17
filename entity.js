@@ -36,11 +36,13 @@ class Entity {
   xcollisions = 0;
   zcollisions = 0;
   collisionGroup = [];
-  jumpForce = 2;
+  jumpForce = 0;
+  canJump = false;
   onPlatform = false;
   reactorX = 0;
   reactorZ = 0;
   reactorY = 0;
+  pushable = false;
 
   constructor(scene, world, x0, y0, z0, vx = 0, vy = 0, vz = 0) {
     this.vx = vx;
@@ -96,7 +98,9 @@ class Entity {
     if (this.vcollisions > 0) {
       this.reactorY = -this.gforce;
       this.vy = 0;
+      this.canJump = true;
     } else {
+      this.canJump = false;
       this.reactorY = 0;
     }
 
@@ -113,13 +117,9 @@ class Entity {
     }
 
     if (!this.anchored) {
-      this.vy -= (this.gforce + this.reactorY) * dt;
+      this.vy -= (this.gforce + this.reactorY + this.jumpForce) * dt;
     }
     this.group.position.setY(this.group.position.y + this.vy * dt);
-    if (this.name === "Legoman") {
-      console.log(`xcol = ${this.xcollisions}`);
-      console.log(`vcol = ${this.vcollisions}`);
-    }
   }
 
   addEntityToScene() {}
