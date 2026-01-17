@@ -11,9 +11,14 @@ class Entity {
   currentCells = [];
   previousCells = [];
   mesh;
-  vx;
-  vy;
-  vz;
+  vx = 0;
+  vy = 0;
+  vz = 0;
+  px = 0;
+  pz = 0;
+  rpx = 0;
+  rpz = 0;
+  spd = 2;
   fx;
   fy;
   fz;
@@ -23,14 +28,19 @@ class Entity {
   theta;
   group;
   bbox;
-  gforce = 0.01;
+  gforce = 0.1;
   deltaP = new THREE.Vector3();
   previousPosition = new THREE.Vector3();
   debuggingEnabled = false;
-  collisionCount = 0;
+  vcollisions = 0;
+  xcollisions = 0;
+  zcollisions = 0;
   collisionGroup = [];
   jumpForce = 2;
   onPlatform = false;
+  reactorX = 0;
+  reactorZ = 0;
+  reactorY = 0;
 
   constructor(scene, world, x0, y0, z0, vx = 0, vy = 0, vz = 0) {
     this.vx = vx;
@@ -44,62 +54,56 @@ class Entity {
   }
 
   update(entities, dt = 0.1) {
-    const collisionBox = this.bbox.clone();
+    this.hcollisions = 0;
+    this.vcollisions = 0;
+    const box = this.bbox.clone();
+    const a = box.clone();
+    a.min.y = box.min.y + this.vy;
+    a.max.y = box.max.y + this.vy;
+
+    const b = box.clone();
+    b.min.x = box.min.x + this.vx;
+    b.max.x = box.max.x + this.vx;
+
+    const k = box.clone();
+    k.min.z = box.min.z + this.vz;
+    k.max.z = box.max.z + this.vz;
 
     entities.forEach((entity) => {
       if (this.id !== entity.id) {
-        if (collisionBox.intersectsBox(entity.bbox)) {
-          if (!this.anchored) {
-            this.collisionGroup.push(entity);
-          }
+        const c = entity.bbox;
+
+        if (c.intersectsBox(a)) {
+          this.vcollisions++;
+        }
+
+        if (c.intersectsBox(b)) {
+          this.xcollisions++;
+        }
+
+        if (c.intersectsBox(k)) {
+          this.zcollisions++;
         }
       }
     });
-    this.onPlatform = false;
 
-    if (this.collisionGroup.length > 0) {
-      this.collisionGroup.forEach((entity) => {
-        const bbox = entity.bbox;
-        const mBbox = this.bbox;
-        const minMBoxY = mBbox.min.y;
-        const minBoxY = bbox.max.y;
-        const intersection = mBbox.intersect(bbox);
-        const minX = intersection.min.x;
-        const maxX = intersection.max.x;
-        const minZ = intersection.min.z;
-        const maxZ = intersection.max.z;
-        const dy = minMBoxY - minBoxY;
-        const dx = maxX - minX;
-        const dz = maxZ - minZ;
-        if (dy > -4) {
-          this.group.position.setY(this.group.position.y + 1 * 0.025);
-          this.vy = 0;
-          this.onPlatform = true;
-        } else {
-          this.onPlatform = false;
-          let bbsize = new THREE.Vector3();
-          bbox.getSize(bbsize);
-          const w = bbsize.x;
-          const h = bbsize.y;
-
-          const center = new THREE.Vector3(
-            bbox.max.x - w / 2,
-            bbox.max.y,
-            bbox.max.z - h / 2
-          );
-          const dx = center.x - this.group.position.x;
-          const dz = center.z - this.group.position.z;
-          const m = Math.sqrt(dx * dx + dz * dz);
-          const nx = -dx / m;
-          const nz = -dz / m;
-          this.group.position.setX(this.group.position.x - dx * 0.07);
-          this.group.position.setZ(this.group.position.z - dz * 0.07);
-        }
-      });
-      this.collisionGroup = [];
-    } else if (!this.anchored) {
-      this.vy += -this.gforce;
+    if (this.vcollisions > 0) {
+      this.reactorY = -this.gforce;
+      this.vy = 0;
+    } else {
+      this.reactorY = 0;
     }
+
+    if (this.xcollisions > 0 && this.vcollisions > 2) {
+      this.rpx = -this.px;
+    } else {
+      this.rpx = 0;
+    }
+
+    if (!this.anchored) {
+      this.vy -= (this.gforce + this.reactorY) * dt;
+    }
+    this.group.position.setY(this.group.position.y + this.vy * dt);
   }
 
   addEntityToScene() {}
@@ -125,12 +129,12 @@ class Entity {
             const p1 = new THREE.Vector3(
               this.group.position.x,
               this.group.position.y,
-              this.group.position.z
+              this.group.position.z,
             );
             const p2 = new THREE.Vector3(
               cell.xcenter,
               cell.ycenter,
-              cell.zcenter
+              cell.zcenter,
             );
             const dist = p1.sub(p2).length();
             if (dist < this.world.cellSize * 2) {
@@ -138,7 +142,7 @@ class Entity {
               const [i, j, k] = this.world.getCellIndexByPosition(
                 cell.xcenter,
                 cell.ycenter,
-                cell.zcenter
+                cell.zcenter,
               );
               if (this.bbox.intersectsBox(bbox)) {
                 cell.insert(this);
@@ -152,9 +156,9 @@ class Entity {
 
       if (!this.anchored) {
         this.group.position.set(
-          this.group.position.x + this.vx * dt,
+          this.group.position.x + (this.vx + this.reactorX) * dt,
           this.group.position.y + this.vy * dt,
-          this.group.position.z + this.vz * dt
+          this.group.position.z + (this.vz + this.reactorZ) * dt,
         );
       }
 
@@ -203,14 +207,14 @@ export class Legoman extends Entity {
     const torsoGeometry = new THREE.BoxGeometry(
       this.scale,
       2 * this.scale,
-      2 * this.scale
+      2 * this.scale,
     );
     const torsoMaterial = new THREE.MeshStandardMaterial({ color: "#198238" });
     const torsoMesh = new THREE.Mesh(torsoGeometry, torsoMaterial);
 
     const tshirtGeometry = new THREE.PlaneGeometry(
       2 * this.scale,
-      2 * this.scale
+      2 * this.scale,
     );
 
     this.texture = new THREE.TextureLoader().load(
@@ -219,7 +223,7 @@ export class Legoman extends Entity {
       () => {},
       (err) => {
         console.log(err);
-      }
+      },
     );
     const tshirtMaterial = new THREE.MeshStandardMaterial({
       map: this.texture,
@@ -231,7 +235,7 @@ export class Legoman extends Entity {
     const leftArmGeometry = new THREE.BoxGeometry(
       this.scale,
       2 * this.scale,
-      1 * this.scale
+      1 * this.scale,
     );
     const leftArmMaterial = new THREE.MeshStandardMaterial({
       color: "#E7E87A",
@@ -242,7 +246,7 @@ export class Legoman extends Entity {
     const rightArmGeometry = new THREE.BoxGeometry(
       this.scale,
       2 * this.scale,
-      1 * this.scale
+      1 * this.scale,
     );
     const rightArmMaterial = new THREE.MeshStandardMaterial({
       color: "#E7E87A",
@@ -253,7 +257,7 @@ export class Legoman extends Entity {
     const rightLegGeometry = new THREE.BoxGeometry(
       this.scale,
       2 * this.scale,
-      1 * this.scale
+      1 * this.scale,
     );
     const rightLegMaterial = new THREE.MeshStandardMaterial({
       color: "#7092BE",
@@ -264,7 +268,7 @@ export class Legoman extends Entity {
     const leftLegGeometry = new THREE.BoxGeometry(
       this.scale,
       2 * this.scale,
-      1 * this.scale
+      1 * this.scale,
     );
     const leftLegMaterial = new THREE.MeshStandardMaterial({
       color: "#7092BE",
@@ -275,7 +279,7 @@ export class Legoman extends Entity {
     const headGeometry = new THREE.CylinderGeometry(
       0.65 * this.scale,
       0.65 * this.scale,
-      0.65 * this.scale
+      0.65 * this.scale,
     );
     const headMaterial = new THREE.MeshStandardMaterial({ color: "#E7E87A" });
     const headMesh = new THREE.Mesh(headGeometry, headMaterial);
@@ -287,7 +291,7 @@ export class Legoman extends Entity {
       () => {},
       (err) => {
         console.log(err);
-      }
+      },
     );
 
     const faceGeometry = new THREE.PlaneGeometry(this.scale, this.scale);
@@ -300,7 +304,7 @@ export class Legoman extends Entity {
     faceMesh.position.set(
       this.scale * 0.65,
       this.scale * 0.75 + 0.75 * this.scale,
-      0
+      0,
     );
 
     this.group.add(torsoMesh);
@@ -333,7 +337,7 @@ export class Test extends Entity {
       () => {},
       (err) => {
         console.log(err);
-      }
+      },
     );
     this.texture.wrapS = THREE.RepeatWrapping;
     this.texture.wrapT = THREE.RepeatWrapping;
@@ -366,7 +370,7 @@ export class SkyBox {
       () => {},
       (err) => {
         console.log(err);
-      }
+      },
     );
     const geo = new THREE.BoxGeometry(1024, 1024, 1024);
     const material = new THREE.MeshBasicMaterial({
@@ -401,7 +405,7 @@ export class Baseplate extends Entity {
       () => {},
       (err) => {
         console.log(err);
-      }
+      },
     );
     this.texture.wrapS = THREE.RepeatWrapping;
     this.texture.wrapT = THREE.RepeatWrapping;
@@ -414,5 +418,63 @@ export class Baseplate extends Entity {
     const mesh = new THREE.Mesh(geometry, material);
     this.group.add(mesh);
     this.scene.add(this.group);
+  }
+}
+
+export class BobOmb extends Entity {
+  camera;
+  constructor(scene, camera, world, x0, y0, z0) {
+    super(scene, world, x0, y0, z0);
+    this.camera = camera;
+  }
+
+  update(entities, dt = 0.01) {
+    this.group.children[0].quaternion.copy(this.camera.quaternion);
+    super.update(entities, dt);
+  }
+
+  constructBobOmb() {
+    this.texture = new THREE.TextureLoader().load(
+      "./textures/bob-omb/bobomb_body.png",
+      () => {},
+      () => {},
+      (err) => {
+        console.log(err);
+      },
+    );
+    const bodyGeometry = new THREE.PlaneGeometry(8, 8, 8);
+    const bodyMaterial = new THREE.MeshStandardMaterial({
+      map: this.texture,
+      alphaHash: true,
+    });
+
+    const hatGeometry = new THREE.CylinderGeometry(1, 1, 0.5, 10);
+    const hatMaterial = new THREE.MeshStandardMaterial({
+      color: "rgb(255, 255, 0)",
+    });
+    const hatMesh = new THREE.Mesh(hatGeometry, hatMaterial);
+    hatMesh.position.set(0, 3.5, 0);
+
+    const textureFace = new THREE.TextureLoader().load(
+      "./textures/bob-omb/bobomb_eyes.png",
+      () => {},
+      () => {},
+      (err) => {
+        console.log(err);
+      },
+    );
+    const faceGeometry = new THREE.PlaneGeometry(5, 5);
+    const faceMaterial = new THREE.MeshStandardMaterial({
+      map: textureFace,
+      alphaHash: true,
+    });
+    const faceMesh = new THREE.Mesh(faceGeometry, faceMaterial);
+    faceMesh.position.set(0, 5, 0);
+    // faceMesh.rotateY(Math.PI / 2);
+
+    this.group.add(new THREE.Mesh(bodyGeometry, bodyMaterial));
+    this.group.add(hatMesh);
+    this.scene.add(this.group);
+    this.scene.add(faceMesh);
   }
 }

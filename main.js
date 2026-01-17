@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { Grid } from "./grid.data_struct";
-import { Baseplate, Legoman, SkyBox, Test } from "./entity";
+import { Baseplate, BobOmb, Legoman, SkyBox, Test } from "./entity";
 
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -10,7 +10,7 @@ const camera = new THREE.PerspectiveCamera(
   75,
   window.innerWidth / window.innerHeight,
   1,
-  1024
+  1024,
 );
 
 const scene = new THREE.Scene();
@@ -24,7 +24,7 @@ const cube = new Baseplate(scene, grid, 128, -128, 128);
 cube.constructBaseplate();
 cube.initEntityOnGrid();
 
-const legoman = new Legoman(scene, grid, 64, 256, 0);
+const legoman = new Legoman(scene, grid, 64, 256 + 64, 0);
 legoman.constructLegoman();
 cube.anchored = true;
 legoman.debuggingEnabled = true;
@@ -63,6 +63,9 @@ document.addEventListener("keydown", (event) => {
 document.addEventListener("keyup", (event) => {
   keyLogger(event);
 });
+
+const bobomb = new BobOmb(scene, camera, grid, 256, 256, 0);
+bobomb.constructBobOmb();
 
 function animate() {
   if (keyState["a"]) {
@@ -125,7 +128,7 @@ function animate() {
     if (
       Math.sqrt(
         controllerTarget.vx * controllerTarget.vx +
-          controllerTarget.vy * controllerTarget.vy
+          controllerTarget.vy * controllerTarget.vy,
       ) < 0.01
     ) {
       controllerTarget.vx = 0;
@@ -142,33 +145,30 @@ function animate() {
   controllerTarget.group.rotation.set(
     0,
     controllerTarget.group.rotation.y + steerTarget * 0.03 * canMove,
-    0
+    0,
   );
   cooldown = Math.abs(steer) > 0.1;
-  if (
-    Math.sqrt(
-      controllerTarget.vx * controllerTarget.vx +
-        controllerTarget.vz * controllerTarget.vz
-    ) < 2
-  ) {
-    controllerTarget.vx += -Math.sin(rot + directionAngle) * canMove * 0.1;
-    controllerTarget.vz += Math.cos(rot + directionAngle) * canMove * 0.1;
-  } else {
-    controllerTarget.vx = -Math.sin(rot + directionAngle) * canMove * 2;
-    controllerTarget.vz = Math.cos(rot + directionAngle) * canMove * 2;
-  }
+  const xx = -Math.sin(rot + directionAngle) * canMove;
+  const zz = Math.cos(rot + directionAngle) * canMove;
+  controllerTarget.px = xx * controllerTarget.spd;
+  controllerTarget.pz = zz * controllerTarget.spd;
+  controllerTarget.vx = controllerTarget.px + controllerTarget.rpx;
+  controllerTarget.vz = controllerTarget.pz + controllerTarget.rpz;
+
   renderer.render(scene, camera);
+  bobomb.checkNeighboringCells();
+
   cube.checkNeighboringCells();
   legoman.checkNeighboringCells();
   test1.checkNeighboringCells();
   test2.checkNeighboringCells();
   test3.checkNeighboringCells();
   grid.updateCells();
-  camera.lookAt(legoman.group.position);
+  camera.lookAt(controllerTarget.group.position);
   camera.position.set(
-    legoman.group.position.x + cameraOffset * Math.cos(rot),
-    legoman.group.position.y + cameraOffset / 2,
-    legoman.group.position.z + cameraOffset * Math.sin(rot)
+    controllerTarget.group.position.x + cameraOffset * Math.cos(rot),
+    controllerTarget.group.position.y + cameraOffset / 2,
+    controllerTarget.group.position.z + cameraOffset * Math.sin(rot),
   );
   if (!cooldown) {
     rotTarget += (sign * Math.PI) / 4;
@@ -176,7 +176,7 @@ function animate() {
   skybox.mesh.position.set(
     camera.position.x,
     camera.position.y,
-    camera.position.z
+    camera.position.z,
   );
 }
 renderer.setAnimationLoop(animate);
