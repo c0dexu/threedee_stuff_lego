@@ -56,6 +56,8 @@ class Entity {
   update(entities, dt = 0.1) {
     this.hcollisions = 0;
     this.vcollisions = 0;
+    this.xcollisions = 0;
+    this.zcollisions = 0;
     const box = this.bbox.clone();
     const a = box.clone();
     a.min.y = box.min.y + this.vy;
@@ -64,10 +66,14 @@ class Entity {
     const b = box.clone();
     b.min.x = box.min.x + this.vx;
     b.max.x = box.max.x + this.vx;
+    b.max.y++;
+    b.min.y++;
 
     const k = box.clone();
     k.min.z = box.min.z + this.vz;
     k.max.z = box.max.z + this.vz;
+    k.max.y++;
+    k.min.y++;
 
     entities.forEach((entity) => {
       if (this.id !== entity.id) {
@@ -94,16 +100,26 @@ class Entity {
       this.reactorY = 0;
     }
 
-    if (this.xcollisions > 0 && this.vcollisions > 2) {
+    if (this.xcollisions > 0) {
       this.rpx = -this.px;
     } else {
       this.rpx = 0;
+    }
+
+    if (this.zcollisions > 0) {
+      this.rpz = -this.pz;
+    } else {
+      this.rpz = 0;
     }
 
     if (!this.anchored) {
       this.vy -= (this.gforce + this.reactorY) * dt;
     }
     this.group.position.setY(this.group.position.y + this.vy * dt);
+    if (this.name === "Legoman") {
+      console.log(`xcol = ${this.xcollisions}`);
+      console.log(`vcol = ${this.vcollisions}`);
+    }
   }
 
   addEntityToScene() {}
@@ -200,7 +216,7 @@ export class Legoman extends Entity {
     this.vx = 0;
     this.vy = 0;
     this.vz = 0;
-    this.group.position.set(64, 256, 0);
+    this.group.position.set(64, 256 * 2, 0);
   }
 
   constructLegoman() {
