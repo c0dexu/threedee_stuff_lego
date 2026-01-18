@@ -18,7 +18,7 @@ class Entity {
   pz = 0;
   rpx = 0;
   rpz = 0;
-  spd = 2;
+  spd = 8;
   fx;
   fy;
   fz;
@@ -28,7 +28,7 @@ class Entity {
   theta;
   group;
   bbox;
-  gforce = 0.1;
+  gforce = 9.8;
   deltaP = new THREE.Vector3();
   previousPosition = new THREE.Vector3();
   debuggingEnabled = false;
@@ -52,10 +52,9 @@ class Entity {
     this.group.position.set(x0, y0, z0);
     this.bbox = new THREE.Box3().setFromObject(this.group);
     this.scene = scene;
-    this.world = world;
   }
 
-  update(entities, dt = 0.1) {
+  update(entities, dt = 0.01) {
     this.hcollisions = 0;
     this.vcollisions = 0;
     this.xcollisions = 0;
@@ -119,7 +118,18 @@ class Entity {
     if (!this.anchored) {
       this.vy -= (this.gforce + this.reactorY + this.jumpForce) * dt;
     }
-    this.group.position.setY(this.group.position.y + this.vy * dt);
+
+    if (!this.anchored) {
+      // this.group.position.set(
+      //   this.group.position.x + (this.vx + this.reactorX) * dt,
+      //   this.group.position.y + this.vy * dt,
+      //   this.group.position.z + (this.vz + this.reactorZ) * dt,
+      // );
+      this.group.position.setX(this.group.position.x + this.vx * dt);
+      this.group.position.setY(this.group.position.y + this.vy * dt);
+      this.group.position.setZ(this.group.position.z + this.vz * dt);
+    }
+    this.bbox = new THREE.Box3().setFromObject(this.group);
   }
 
   addEntityToScene() {}
@@ -169,14 +179,6 @@ class Entity {
           });
         });
       });
-
-      if (!this.anchored) {
-        this.group.position.set(
-          this.group.position.x + (this.vx + this.reactorX) * dt,
-          this.group.position.y + this.vy * dt,
-          this.group.position.z + (this.vz + this.reactorZ) * dt,
-        );
-      }
 
       this.bbox = new THREE.Box3().setFromObject(this.group);
     } catch (e) {

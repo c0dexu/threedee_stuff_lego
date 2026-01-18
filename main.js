@@ -15,19 +15,23 @@ const camera = new THREE.PerspectiveCamera(
 
 const scene = new THREE.Scene();
 
-const grid = new Grid(scene, 256, 256);
-grid.buildGrid();
+const grid = null;
+
+const entityMap = new Map();
 
 camera.position.set(0, 20, 16);
 
 const cube = new Baseplate(scene, grid, 128, -128, 128);
 cube.constructBaseplate();
-cube.initEntityOnGrid();
+
+entityMap.set(cube.id, cube);
 
 const legoman = new Legoman(scene, grid, 64, 256 + 64, 0);
 legoman.constructLegoman();
 cube.anchored = true;
 legoman.debuggingEnabled = true;
+
+entityMap.set(legoman.id, legoman);
 
 const test1 = new Test(scene, grid, 64, 256 - 64 + 32, 0);
 test1.constructTest();
@@ -43,6 +47,11 @@ scene.add(light);
 
 const bobomb = new BobOmb(scene, camera, grid, 256, 256, 0);
 bobomb.constructBobOmb();
+
+entityMap.set(bobomb.id, bobomb);
+entityMap.set(test1.id, test1);
+entityMap.set(test2.id, test2);
+entityMap.set(test3.id, test3);
 
 const skybox = new SkyBox(scene);
 skybox.initSkyBox();
@@ -68,6 +77,8 @@ document.addEventListener("keyup", (event) => {
   keyLogger(event);
 });
 
+const entityList = [...entityMap.values()];
+
 function animate() {
   if (keyState["a"]) {
     sign = 1;
@@ -82,7 +93,7 @@ function animate() {
   }
 
   if (keyState["x"] && controllerTarget.canJump) {
-    controllerTarget.vy += 1.5;
+    controllerTarget.vy += 9.8;
   }
 
   if (keyState["ArrowUp"]) {
@@ -130,15 +141,6 @@ function animate() {
     canMove = 0;
     controllerTarget.vx *= 0.75;
     controllerTarget.vz *= 0.75;
-    if (
-      Math.sqrt(
-        controllerTarget.vx * controllerTarget.vx +
-          controllerTarget.vy * controllerTarget.vy,
-      ) < 0.01
-    ) {
-      controllerTarget.vx = 0;
-      controllerTarget.vz = 0;
-    }
   }
 
   const steer = rotTarget - rot;
@@ -164,14 +166,7 @@ function animate() {
   controllerTarget.vz = controllerTarget.pz + controllerTarget.rpz;
 
   renderer.render(scene, camera);
-  bobomb.checkNeighboringCells();
 
-  cube.checkNeighboringCells();
-  legoman.checkNeighboringCells();
-  test1.checkNeighboringCells();
-  test2.checkNeighboringCells();
-  test3.checkNeighboringCells();
-  grid.updateCells();
   camera.lookAt(controllerTarget.group.position);
   camera.position.set(
     controllerTarget.group.position.x + cameraOffset * Math.cos(rot),
@@ -186,5 +181,9 @@ function animate() {
     camera.position.y,
     camera.position.z,
   );
+
+  for (const entity of entityList) {
+    entity.update(entityList, 0.01);
+  }
 }
 renderer.setAnimationLoop(animate);

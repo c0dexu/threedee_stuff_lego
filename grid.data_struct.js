@@ -10,6 +10,7 @@ export class Cell {
   scene;
   cellMesh;
   indices = [];
+  allEntities = new Map(); // id -> entity
 
   constructor(scene, xcenter, ycenter, zcenter, length) {
     this.scene = scene;
@@ -22,30 +23,14 @@ export class Cell {
     const minVector = new THREE.Vector3(
       this.xcenter - this.length / 2,
       this.ycenter - this.length / 2,
-      this.zcenter - this.length / 2
+      this.zcenter - this.length / 2,
     );
     const maxVector = new THREE.Vector3(
       this.xcenter + this.length / 2,
       this.ycenter + this.length / 2,
-      this.zcenter + this.length / 2
+      this.zcenter + this.length / 2,
     );
     this.bbox = new THREE.Box3(minVector, maxVector);
-
-    // const cellGeometry = new THREE.BoxGeometry(
-    //   this.length - 4,
-    //   this.length - 4,
-    //   this.length - 4
-    // );
-
-    // const cellMaterial = new THREE.MeshBasicMaterial({
-    //   color: "#18AD95",
-    //   transparent: true,
-    //   opacity: 0.25,
-    // });
-
-    // this.cellMesh = new THREE.Mesh(cellGeometry, cellMaterial);
-    // this.cellMesh.position.set(this.xcenter, this.ycenter, this.zcenter);
-    // this.scene.add(this.cellMesh);
   }
 
   insert(entity) {
@@ -56,14 +41,14 @@ export class Cell {
   }
   remove(entityId) {
     const idx = this.entities.findIndex((e) => e.id === entityId);
-    this.entities = this.entities.splice(idx, idx);
+    if (idx !== -1) this.entities.splice(idx, 1);
   }
   search(entityId) {
     return this.entities.find((m) => m.id === entityId);
   }
-  update(dt = 0.1) {
+  update(dt = 0.01) {
     this.entities.forEach((entity) => {
-      entity.update(this.entities);
+      entity.update(this.entities, dt);
     });
   }
 }
@@ -92,7 +77,7 @@ export class Grid {
     const gridVectorPosition = new THREE.Vector3(
       this.gridX,
       this.gridY,
-      this.gridZ
+      this.gridZ,
     );
 
     const n = this.noCells;
@@ -112,13 +97,13 @@ export class Grid {
     const gridVectorPosition = new THREE.Vector3(
       this.gridX,
       this.gridY,
-      this.gridZ
+      this.gridZ,
     );
 
     const cellRelativePosition = new THREE.Vector3(
       this.cellSize * i,
       this.cellSize * j,
-      this.cellSize * k
+      this.cellSize * k,
     );
 
     let cellPosition = gridVectorPosition.add(cellRelativePosition);
@@ -127,7 +112,7 @@ export class Grid {
       cellPosition.x,
       cellPosition.y,
       cellPosition.z,
-      this.cellSize
+      this.cellSize,
     );
 
     cell.length = this.cellSize;
@@ -160,7 +145,7 @@ export class Grid {
           const cellGeometry = new THREE.BoxGeometry(
             this.cellSize,
             this.cellSize,
-            this.cellSize
+            this.cellSize,
           );
 
           const cellMaterial = new THREE.MeshBasicMaterial({
