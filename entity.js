@@ -61,8 +61,8 @@ class Entity {
     this.zcollisions = 0;
     const box = this.bbox.clone();
     const a = box.clone();
-    a.min.y = box.min.y + this.vy;
-    a.max.y = box.max.y + this.vy;
+    a.min.y = box.min.y + this.vy * dt;
+    a.max.y = box.max.y + this.vy * dt;
 
     const b = box.clone();
     b.min.x = box.min.x + this.vx;
@@ -128,6 +128,10 @@ class Entity {
       this.group.position.setX(this.group.position.x + this.vx * dt);
       this.group.position.setY(this.group.position.y + this.vy * dt);
       this.group.position.setZ(this.group.position.z + this.vz * dt);
+    }
+
+    if (this.name === "Legoman") {
+      console.log(this.vy);
     }
     this.bbox = new THREE.Box3().setFromObject(this.group);
   }
