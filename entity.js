@@ -18,7 +18,7 @@ class Entity {
   pz = 0;
   rpx = 0;
   rpz = 0;
-  spd = 8;
+  spd = 16;
   fx;
   fy;
   fz;
@@ -65,14 +65,14 @@ class Entity {
     a.max.y = box.max.y + this.vy * dt;
 
     const b = box.clone();
-    b.min.x = box.min.x + this.vx;
-    b.max.x = box.max.x + this.vx;
+    b.min.x = box.min.x + this.vx * dt + Math.sign(this.vx);
+    b.max.x = box.max.x + this.vx * dt + Math.sign(this.vx);
     b.max.y++;
     b.min.y++;
 
     const k = box.clone();
-    k.min.z = box.min.z + this.vz;
-    k.max.z = box.max.z + this.vz;
+    k.min.z = box.min.z + this.vz * dt + Math.sign(this.vz);
+    k.max.z = box.max.z + this.vz * dt + Math.sign(this.vz);
     k.max.y++;
     k.min.y++;
 
@@ -120,11 +120,6 @@ class Entity {
     }
 
     if (!this.anchored) {
-      // this.group.position.set(
-      //   this.group.position.x + (this.vx + this.reactorX) * dt,
-      //   this.group.position.y + this.vy * dt,
-      //   this.group.position.z + (this.vz + this.reactorZ) * dt,
-      // );
       this.group.position.setX(this.group.position.x + this.vx * dt);
       this.group.position.setY(this.group.position.y + this.vy * dt);
       this.group.position.setZ(this.group.position.z + this.vz * dt);
@@ -137,59 +132,6 @@ class Entity {
   }
 
   addEntityToScene() {}
-
-  initEntityOnGrid() {
-    const cellList = this.world.cells.flat(Infinity);
-    const myBbox = new THREE.Box3().setFromObject(this.group);
-    cellList.forEach((cell) => {
-      const cellBbox = cell.bbox;
-      if (myBbox.intersectsBox(cellBbox)) {
-        cell.insert(this);
-        this.currentCells.push(cell);
-        this.previousCells.push(cell);
-      }
-    });
-  }
-
-  checkNeighboringCells(dt = 0.1) {
-    try {
-      this.world.cells.forEach((line1) => {
-        line1.forEach((line2) => {
-          line2.forEach((cell) => {
-            const p1 = new THREE.Vector3(
-              this.group.position.x,
-              this.group.position.y,
-              this.group.position.z,
-            );
-            const p2 = new THREE.Vector3(
-              cell.xcenter,
-              cell.ycenter,
-              cell.zcenter,
-            );
-            const dist = p1.sub(p2).length();
-            if (dist < this.world.cellSize * 2) {
-              const bbox = cell.bbox;
-              const [i, j, k] = this.world.getCellIndexByPosition(
-                cell.xcenter,
-                cell.ycenter,
-                cell.zcenter,
-              );
-              if (this.bbox.intersectsBox(bbox)) {
-                cell.insert(this);
-              }
-            } else {
-              cell.remove(this.id);
-            }
-          });
-        });
-      });
-
-      this.bbox = new THREE.Box3().setFromObject(this.group);
-    } catch (e) {
-      console.log(e);
-      return;
-    }
-  }
 
   getDistanceFromEntity(other) {
     const mPosition = this.group.position;
