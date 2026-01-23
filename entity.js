@@ -43,6 +43,7 @@ class Entity {
   reactorZ = 0;
   reactorY = 0;
   pushable = false;
+  canCollide = true;
 
   constructor(scene, world, x0, y0, z0, vx = 0, vy = 0, vz = 0) {
     this.vx = vx;
@@ -80,15 +81,15 @@ class Entity {
       if (this.id !== entity.id) {
         const c = entity.bbox;
 
-        if (c.intersectsBox(a)) {
+        if (entity.canCollide && c.intersectsBox(a)) {
           this.vcollisions++;
         }
 
-        if (c.intersectsBox(b)) {
+        if (entity.canCollide && c.intersectsBox(b)) {
           this.xcollisions++;
         }
 
-        if (c.intersectsBox(k)) {
+        if (entity.canCollide && c.intersectsBox(k)) {
           this.zcollisions++;
         }
       }
@@ -173,7 +174,7 @@ export class Legoman extends Entity {
       2 * this.scale,
       2 * this.scale,
     );
-    const torsoMaterial = new THREE.MeshStandardMaterial({ color: "#198238" });
+    const torsoMaterial = new THREE.MeshStandardMaterial({ color: "#02f6fa" });
     const torsoMesh = new THREE.Mesh(torsoGeometry, torsoMaterial);
 
     const tshirtGeometry = new THREE.PlaneGeometry(
@@ -376,7 +377,7 @@ export class Baseplate extends Entity {
     this.texture.repeat = new THREE.Vector2(this.width / 4, this.height / 4);
     const geometry = new THREE.BoxGeometry(this.width, this.depth, this.height);
     const material = new THREE.MeshStandardMaterial({
-      color: "#165C1A",
+      color: "#14ffad",
       map: this.texture,
     });
     const mesh = new THREE.Mesh(geometry, material);
@@ -385,16 +386,46 @@ export class Baseplate extends Entity {
   }
 }
 
-export class BobOmb extends Entity {
+export class Kitty extends Entity {
   camera;
+  target = null;
   constructor(scene, camera, world, x0, y0, z0) {
     super(scene, world, x0, y0, z0);
     this.camera = camera;
+    this.canCollide = false;
   }
 
   update(entities, dt = 0.01) {
     this.group.children[0].quaternion.copy(this.camera.quaternion);
+
+    if (this.target) {
+      const x = this.group.position.x;
+      const z = this.group.position.z;
+
+      const x0 = this.target.group.position.x;
+      const z0 = this.target.group.position.z;
+
+      const dx = x0 - x;
+      const dz = z0 - z;
+
+      const mm = Math.sqrt(dx * dx + dz * dz);
+
+      const nx = dx / mm;
+      const nz = dz / mm;
+
+      this.px = nx * 8;
+      // this.vy += dy * dt;
+      this.pz = nz * 8;
+
+      this.vx = this.px + this.rpx;
+      this.vz = this.pz + this.rpz;
+    }
+
     super.update(entities, dt);
+  }
+
+  setFollowTarget(target) {
+    this.target = target;
   }
 
   constructBobOmb() {

@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { Grid } from "./grid.data_struct";
-import { Baseplate, BobOmb, Legoman, SkyBox, Test } from "./entity";
+import { Baseplate, Kitty, Legoman, SkyBox, Test } from "./entity";
 
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -45,7 +45,7 @@ test3.constructTest();
 const light = new THREE.HemisphereLight(0xcef0ff, 0xcfc6ff, 2);
 scene.add(light);
 
-const bobomb = new BobOmb(scene, camera, grid, 256, 256, 0);
+const bobomb = new Kitty(scene, camera, grid, 256, 256, 0);
 bobomb.constructBobOmb();
 
 entityMap.set(bobomb.id, bobomb);
@@ -79,6 +79,8 @@ document.addEventListener("keyup", (event) => {
 
 const entityList = [...entityMap.values()];
 
+bobomb.setFollowTarget(legoman);
+
 function animate() {
   if (keyState["a"]) {
     sign = 1;
@@ -93,7 +95,7 @@ function animate() {
   }
 
   if (keyState["x"] && controllerTarget.canJump) {
-    controllerTarget.vy += 9.8;
+    controllerTarget.vy += 16;
   }
 
   if (keyState["ArrowUp"]) {

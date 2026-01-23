@@ -1,13 +1,36 @@
-<!DOCTYPE html>
-<html  lang="en">
-	<head>
-		<meta charset="utf-8">
-		<title>My first three.js app</title>
-		<style>
-			body { margin: 0; }
-		</style>
-	</head>
-	<body>
-		<script type="module" src="/main.js"></script>
-	</body>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Bl0xx</title>
+    <style>
+      body {
+        margin: 0;
+      }
+      .health-bar {
+        display: flex;
+        justify-content: center;
+        width: 8px;
+        height: 128px;
+        background-color: rgb(6, 240, 6);
+        z-index: 1000000;
+      }
+
+      .container {
+        position: fixed;
+        z-index: 1000000;
+        right: 128px;
+        top: 128px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="health-bar"></div>
+      <div style="display: flex; justify-content: center; width: 100%">
+        <div class="health-text">Health</div>
+      </div>
+    </div>
+    <script type="module" src="/main.js"></script>
+  </body>
 </html>
